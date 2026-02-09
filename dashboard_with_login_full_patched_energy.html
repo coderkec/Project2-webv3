@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Q&A 대시보드</title>
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            padding-bottom: 210px;
+            /* 하단 위젯 고정바 여백 */
+        }
+
+        /* ================== 상단 상태바 ================== */
+        .topbar {
+            position: fixed;
+            top: 12px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: calc(100% - 40px);
+            max-width: 900px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            border: 1px solid #eef2f7;
+            border-radius: 16px;
+            padding: 12px 14px;
+            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.06);
+            z-index: 200;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            min-width: 0;
+        }
+
+        .brand {
+            font-weight: 800;
+            color: #0f172a;
+            letter-spacing: -0.2px;
+            white-space: nowrap;
+        }
+
+        .subbrand {
+            font-size: 12px;
+            color: #64748b;
+            white-space: nowrap;
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+
+        .pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            font-size: 12px;
+            color: #334155;
+            white-space: nowrap;
+        }
+
+        .dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 999px;
+            background: #94a3b8;
+        }
+
+        .dot.ok {
+            background: #22c55e;
+        }
+
+        .dot.fail {
+            background: #ef4444;
+        }
+
+        .dot.warn {
+            background: #f59e0b;
+        }
+
+        .model-tag {
+            font-weight: 700;
+            color: #7c3aed;
+            background: #f5f3ff;
+            border: 1px solid #ede9fe;
+        }
+
+        /* ================== 본문 컨테이너 ================== */
+        .container {
+            max-width: 900px;
+            width: 100%;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 22px;
+            padding-top: 110px;
+            /* topbar 공간 */
+        }
+
+        /* 랜덤 명언 카드 */
+        .quote-card {
+            background: white;
+            border-radius: 16px;
+            padding: 26px 34px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 20px rgba(0, 0, 0, 0.03);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .quote-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08), 0 15px 30px rgba(0, 0, 0, 0.05);
+        }
+
+        .quote-text {
+            font-size: 18px;
+            font-weight: 400;
+            color: #2c3e50;
+            line-height: 1.6;
+            margin-bottom: 10px;
+            font-style: italic;
+        }
+
+        .quote-text::before {
+            content: '"';
+            font-size: 24px;
+            color: #7c3aed;
+            margin-right: 4px;
+        }
+
+        .quote-text::after {
+            content: '"';
+            font-size: 24px;
+            color: #7c3aed;
+            margin-left: 4px;
+        }
+
+        .quote-author {
+            font-size: 13px;
+            color: #64748b;
+            font-weight: 600;
+        }
+
+        /* 메인 질문 영역 */
+        .main-section {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            width: 100%;
+        }
+
+        .question-input {
+            width: 100%;
+            padding: 18px 60px 18px 22px;
+            font-size: 16px;
+            border: 2px solid #e2e8f0;
+            border-radius: 24px;
+            background: white;
+            color: #0f172a;
+            outline: none;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .question-input:focus {
+            border-color: #7c3aed;
+            box-shadow: 0 6px 12px rgba(124, 58, 237, 0.15);
+        }
+
+        .question-input::placeholder {
+            color: #94a3b8;
+        }
+
+        .send-button {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
+        }
+
+        .send-button:hover {
+            background: linear-gradient(135deg, #6d28d9 0%, #4f46e5 100%);
+            transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
+        }
+
+        .send-button:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .send-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .example-questions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .example-btn {
+            padding: 10px 18px;
+            background: white;
+            border: 1px solid #e2e8f0;
+            border-radius: 20px;
+            font-size: 13px;
+            color: #64748b;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .example-btn:hover {
+            border-color: #7c3aed;
+            color: #7c3aed;
+            background: #f5f3ff;
+        }
+
+        /* ================== 채팅 히스토리 ================== */
+        .chat-card {
+            background: white;
+            border-radius: 16px;
+            padding: 18px 18px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #eef2f7;
+        }
+
+        .chat-head {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .chat-title {
+            font-size: 14px;
+            font-weight: 800;
+            color: #0f172a;
+        }
+
+        .chat-meta {
+            font-size: 12px;
+            color: #64748b;
+        }
+
+        .chat-log {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 420px;
+            overflow: auto;
+            padding: 4px 2px;
+        }
+
+        .msg {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .msg.user {
+            justify-content: flex-end;
+        }
+
+        .bubble {
+            max-width: 78%;
+            padding: 12px 14px;
+            border-radius: 14px;
+            border: 1px solid #e2e8f0;
+            background: #f8fafc;
+            color: #0f172a;
+            line-height: 1.5;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .msg.user .bubble {
+            background: #f5f3ff;
+            border-color: #ede9fe;
+        }
+
+        .role-tag {
+            font-size: 12px;
+            font-weight: 800;
+            color: #64748b;
+            margin-top: 2px;
+            white-space: nowrap;
+        }
+
+        .loading-row {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 3px solid #e2e8f0;
+            border-radius: 50%;
+            border-top-color: #7c3aed;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        /* ================== 하단 위젯 ================== */
+        .info-grid {
+            position: fixed;
+            left: 50%;
+            transform: translateX(-50%);
+            bottom: 12px;
+            width: calc(100% - 40px);
+            max-width: 900px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            z-index: 50;
+        }
+
+        .info-card {
+            background: white;
+            border-radius: 14px;
+            padding: 12px 14px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            border: 1px solid #eef2f7;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
+        }
+
+        .info-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 10px;
+            font-size: 14px;
+            font-weight: 800;
+            color: #334155;
+            margin-bottom: 8px;
+        }
+
+        .badge {
+            font-size: 12px;
+            font-weight: 700;
+            color: #7c3aed;
+            background: #f5f3ff;
+            border: 1px solid #ede9fe;
+            padding: 4px 10px;
+            border-radius: 999px;
+        }
+
+        .info-value {
+            font-size: 16px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-bottom: 4px;
+        }
+
+        .info-sub {
+            font-size: 12px;
+            color: #64748b;
+            line-height: 1.4;
+        }
+
+        .mini-muted {
+            font-size: 11px;
+            color: #94a3b8;
+            margin-top: 8px;
+        }
+
+        /* ================== 로그인 UI (테마 재사용) ================== */
+        #loginTrigger {
+            position: fixed;
+            bottom: 18px;
+            left: 18px;
+            z-index: 9999;
+        }
+
+        #loginPanel {
+            display: none;
+            position: fixed;
+            bottom: 64px;
+            left: 18px;
+            background: white;
+            border-radius: 16px;
+            padding: 16px;
+            width: 240px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .1);
+            z-index: 10000;
+            border: 1px solid #eef2f7;
+        }
+
+        .locked-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(245, 247, 250, 0.6);
+            backdrop-filter: blur(3px);
+            z-index: 9000;
+            display: none;
+        }
+
+        .locked-overlay.active {
+            display: block;
+        }
+
+        @media (max-width: 900px) {
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .bubble {
+                max-width: 92%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <!-- 상단 상태바 -->
+    <div class="topbar" aria-label="서비스 상태">
+        <div class="topbar-left">
+            <div class="brand">Q&A Dashboard</div>
+            <div class="subbrand" id="envText"></div>
+        </div>
+
+        <div class="topbar-right">
+            <div class="pill model-tag">Model: <span id="modelName">Ollama (TBD)</span></div>
+            <div class="pill">User: <b id="userState">Guest</b></div>
+            <div class="pill"><span class="dot" id="dotWeather"></span>Weather</div>
+            <div class="pill"><span class="dot" id="dotEnergy"></span>Energy</div>
+            <div class="pill"><span class="dot" id="dotFx"></span>FX</div>
+            <div class="pill"><span class="dot" id="dotTime"></span>Time</div>
+        </div>
+    </div>
+
+    <!-- 로그인 UI -->
+    <div id="loginTrigger">
+        <button class="example-btn" id="loginBtn" type="button" onclick="toggleLoginPanel()">Login</button>
+    </div>
+
+    <div id="loginPanel" aria-label="Admin Login Panel">
+        <div style="font-weight:800;margin-bottom:10px;color:#334155;">Admin Login</div>
+        <input id="loginId" class="question-input" placeholder="ID"
+            style="padding:12px 14px;border-radius:14px;margin-bottom:8px;">
+        <input id="loginPw" type="password" class="question-input" placeholder="Password"
+            style="padding:12px 14px;border-radius:14px;margin-bottom:10px;">
+        <button class="send-button" type="button"
+            style="position:static;width:100%;height:40px;border-radius:20px;transform:none;"
+            onclick="doLogin()">Login</button>
+        <div style="margin-top:10px;font-size:12px;color:#94a3b8;">
+            계정: admin / admin123
+        </div>
+    </div>
+
+    <!-- 로그인 전 전체 UI 가드 -->
+    <div id="lockedOverlay" class="locked-overlay" aria-hidden="true"></div>
+
+    <div class="container">
+        <!-- 랜덤 명언 카드 -->
+        <div class="quote-card">
+            <div class="quote-text" id="quoteText">Simplicity is the soul of efficiency.</div>
+            <div class="quote-author" id="quoteAuthor">— Austin Freeman</div>
+        </div>
+
+        <!-- 메인 질문 영역 -->
+        <div class="main-section">
+            <div class="input-wrapper">
+                <input type="text" class="question-input" id="questionInput" placeholder="날씨, 전력, 환율, 시간에 대해 질문해보세요"
+                    autocomplete="off">
+                <button class="send-button" id="sendButton" aria-label="send">
+                    <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="example-questions">
+                <button class="example-btn" data-question="오늘 서울 날씨 알려줘">현재 날씨</button>
+                <button class="example-btn" data-question="KPX 지금 전력 데이터 요약해줘">전력 요약</button>
+                <button class="example-btn" data-question="달러 환율 알려줘">환율 정보</button>
+                <button class="example-btn" data-question="지금 몇 시야?">현재 시간</button>
+            </div>
+        </div>
+
+        <!-- 채팅 히스토리 -->
+        <div class="chat-card" aria-label="대화">
+            <div class="chat-head">
+                <div class="chat-title">Conversation</div>
+                <div class="chat-meta" id="chatMeta">0 messages</div>
+            </div>
+            <div class="chat-log" id="chatLog"></div>
+        </div>
+    </div>
+
+    <!-- 하단 위젯 -->
+    <div class="info-grid" aria-label="실시간 정보">
+        <div class="info-card" id="cardWeather">
+            <div class="info-title">
+                <span>현재 날씨</span>
+                <span class="badge">Open-Meteo</span>
+            </div>
+            <div class="info-value" id="weatherValue">—</div>
+            <div class="info-sub" id="weatherSub">서울 기준 / 로딩 중...</div>
+            <div class="mini-muted" id="weatherMeta"></div>
+        </div>
+
+        <div class="info-card" id="cardEnergy">
+            <div class="info-title">
+                <span>전력(KPX)</span>
+                <span class="badge">/api/energy</span>
+            </div>
+            <div class="info-value" id="energyValue">—</div>
+            <div class="info-sub" id="energySub">로딩 중...</div>
+            <div class="mini-muted" id="energyMeta"></div>
+        </div>
+
+        <div class="info-card" id="cardFx">
+            <div class="info-title">
+                <span>환율</span>
+                <span class="badge">USD→KRW</span>
+            </div>
+            <div class="info-value" id="fxValue">—</div>
+            <div class="info-sub" id="fxSub">로딩 중...</div>
+            <div class="mini-muted" id="fxMeta"></div>
+        </div>
+
+        <div class="info-card" id="cardTime">
+            <div class="info-title">
+                <span>현재 시간</span>
+                <span class="badge">Asia/Seoul</span>
+            </div>
+            <div class="info-value" id="timeValue">—</div>
+            <div class="info-sub" id="timeSub">로딩 중...</div>
+            <div class="mini-muted" id="timeMeta"></div>
+        </div>
+    </div>
+
+    <script>
+        /* ================== 명언 ================== */
+        const quotes = [
+            { text: "Simplicity is the soul of efficiency.", author: "Austin Freeman" },
+            { text: "The best way to predict the future is to create it.", author: "Peter Drucker" },
+            { text: "Innovation distinguishes between a leader and a follower.", author: "Steve Jobs" },
+            { text: "Quality is not an act, it is a habit.", author: "Aristotle" },
+            { text: "Data is the new oil.", author: "Clive Humby" },
+            { text: "Without data, you're just another person with an opinion.", author: "W. Edwards Deming" }
+        ];
+
+        function loadRandomQuote() {
+            const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+            document.getElementById('quoteText').textContent = randomQuote.text;
+            document.getElementById('quoteAuthor').textContent = `— ${randomQuote.author}`;
+        }
+
+        /* ================== 로그인(프론트 가드) ================== */
+        const ADMIN_ID = "admin";
+        const ADMIN_PW = "admin123";
+
+        function isLoggedIn() {
+            return localStorage.getItem("isLoggedIn") === "true";
+        }
+
+        function setUserState() {
+            document.getElementById("userState").textContent = isLoggedIn() ? "admin" : "Guest";
+        }
+
+        function lockUI() {
+            document.getElementById("questionInput").disabled = true;
+            document.getElementById("sendButton").disabled = true;
+            document.querySelectorAll(".example-btn").forEach(b => b.disabled = true);
+            document.getElementById("lockedOverlay").classList.add("active");
+        }
+
+        function unlockUI() {
+            document.getElementById("questionInput").disabled = false;
+            document.getElementById("sendButton").disabled = false;
+            document.querySelectorAll(".example-btn").forEach(b => b.disabled = false);
+            document.getElementById("lockedOverlay").classList.remove("active");
+        }
+
+        function toggleLoginPanel() {
+            const panel = document.getElementById("loginPanel");
+            if (!panel) return;
+            panel.style.display = (panel.style.display === "block") ? "none" : "block";
+        }
+
+        function bindLoginEnter() {
+            ["loginId", "loginPw"].forEach((id) => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                el.addEventListener("keydown", (e) => {
+                    if (e.key === "Enter") doLogin();
+                });
+            });
+        }
+
+        function initAuthUI() {
+            setUserState();
+            if (isLoggedIn()) {
+                document.getElementById("loginTrigger").innerHTML =
+                    `admin <button class="example-btn" type="button" onclick="logout()">Logout</button>`;
+                unlockUI();
+            } else {
+                // 로그인 버튼 원복(Logout에서 clear 후 reload 시에도 대비)
+                document.getElementById("loginTrigger").innerHTML =
+                    `<button class="example-btn" id="loginBtn" type="button" onclick="toggleLoginPanel()">Login</button>`;
+                lockUI();
+            }
+        }
+
+        function doLogin() {
+            const id = document.getElementById("loginId").value;
+            const pw = document.getElementById("loginPw").value;
+
+            if (id === ADMIN_ID && pw === ADMIN_PW) {
+                localStorage.setItem("isLoggedIn", "true");
+                document.getElementById("loginPanel").style.display = "none";
+                initAuthUI();
+                refreshAll();
+            } else {
+                alert("아이디 또는 비밀번호가 틀렸습니다.");
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        /* ================== 채팅 히스토리 ================== */
+        const chat = { messages: [] };
+
+        function updateChatMeta() {
+            document.getElementById("chatMeta").textContent = `${chat.messages.length} messages`;
+        }
+
+        function appendMessage(role, content) {
+            chat.messages.push({ role, content });
+            const log = document.getElementById("chatLog");
+
+            const row = document.createElement("div");
+            row.className = `msg ${role === "user" ? "user" : "assistant"}`;
+
+            const roleTag = document.createElement("div");
+            roleTag.className = "role-tag";
+            roleTag.textContent = role === "user" ? "YOU" : "AI";
+
+            const bubble = document.createElement("div");
+            bubble.className = "bubble";
+            bubble.textContent = content;
+
+            if (role === "user") {
+                row.appendChild(bubble);
+            } else {
+                row.appendChild(roleTag);
+                row.appendChild(bubble);
+            }
+
+            log.appendChild(row);
+            log.scrollTop = log.scrollHeight;
+            updateChatMeta();
+        }
+
+        function setTyping(on) {
+            const log = document.getElementById("chatLog");
+            const id = "typingRow";
+            const old = document.getElementById(id);
+            if (old) old.remove();
+
+            if (!on) return;
+
+            const row = document.createElement("div");
+            row.className = "msg assistant";
+            row.id = id;
+
+            const roleTag = document.createElement("div");
+            roleTag.className = "role-tag";
+            roleTag.textContent = "AI";
+
+            const bubble = document.createElement("div");
+            bubble.className = "bubble";
+            bubble.innerHTML = `<span class="loading-row"><span class="loading"></span> 분석 중...</span>`;
+
+            row.appendChild(roleTag);
+            row.appendChild(bubble);
+            log.appendChild(row);
+            log.scrollTop = log.scrollHeight;
+        }
+
+        /* ================== 질문 전송 (현재: 데모 / 향후: /api/qa -> Ollama) ================== */
+        async function sendQuestion() {
+            if (!isLoggedIn()) {
+                alert("로그인이 필요합니다.");
+                return;
+            }
+
+            const input = document.getElementById("questionInput");
+            const question = input.value.trim();
+            if (!question) return;
+
+            appendMessage("user", question);
+            input.value = "";
+
+            setTyping(true);
+            setTimeout(() => {
+                setTyping(false);
+                const demo = [
+                    "데모 응답입니다.",
+                    "다음 단계에서는 /api/qa로 질문을 보내고, 백엔드가 날씨/전력/환율/시간 API를 수집한 뒤 Ollama 모델에 컨텍스트로 주입해서 답변을 생성합니다.",
+                    "즉, ‘학습’이 아니라 ‘RAG + Tool 호출’이 정답입니다."
+                ].join("\n");
+                appendMessage("assistant", demo);
+            }, 900);
+        }
+
+        document.getElementById("sendButton").addEventListener("click", sendQuestion);
+        document.getElementById("questionInput").addEventListener("keypress", (e) => {
+            if (e.key === "Enter") sendQuestion();
+        });
+
+        document.querySelectorAll(".example-btn").forEach(btn => {
+            btn.addEventListener("click", () => {
+                if (!isLoggedIn()) { alert("로그인이 필요합니다."); return; }
+                const q = btn.getAttribute("data-question");
+                document.getElementById("questionInput").value = q;
+                sendQuestion();
+            });
+        });
+
+        /* ================== 하단 위젯(날씨/환율/시간/에너지) ================== */
+        const WIDGETS = {
+            seoul: { lat: 37.5665, lon: 126.9780, name: "서울" },
+            fxBase: "USD",
+            fxTarget: "KRW",
+            tz: "Asia/Seoul"
+        };
+
+        function setText(id, text) {
+            const el = document.getElementById(id);
+            if (el) el.textContent = text;
+        }
+
+        function fmtTimeHHMM(dt) {
+            const hh = String(dt.getHours()).padStart(2, "0");
+            const mm = String(dt.getMinutes()).padStart(2, "0");
+            return `${hh}:${mm}`;
+        }
+
+        async function fetchJson(path) {
+            const res = await fetch(path, { cache: "no-store" });
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
+            return res.json();
+        }
+
+        function setDot(id, state) {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.classList.remove("ok", "fail", "warn");
+            el.classList.add(state);
+        }
+
+        async function loadWeather() {
+            const { lat, lon, name } = WIDGETS.seoul;
+            const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,relative_humidity_2m,wind_speed_10m&timezone=Asia%2FSeoul`;
+
+            setText("weatherSub", `${name} 기준 / 로딩 중...`);
+            try {
+                const res = await fetch(url, { cache: "no-store" });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                const cur = data.current || {};
+                const t = cur.temperature_2m;
+                const h = cur.relative_humidity_2m;
+                const w = cur.wind_speed_10m;
+                const tUnit = (data.current_units && data.current_units.temperature_2m) || "°C";
+                const wUnit = (data.current_units && data.current_units.wind_speed_10m) || "m/s";
+
+                setText("weatherValue", (t ?? null) !== null ? `${t}${tUnit}` : "—");
+                setText("weatherSub", `습도 ${h ?? "—"}% · 바람 ${w ?? "—"}${wUnit}`);
+                setText("weatherMeta", cur.time ? `업데이트: ${cur.time}` : "");
+                setDot("dotWeather", "ok");
+                return true;
+            } catch (e) {
+                setText("weatherValue", "불러오기 실패");
+                setText("weatherSub", "outbound/방화벽 확인");
+                setText("weatherMeta", String(e));
+                setDot("dotWeather", "fail");
+                return false;
+            }
+        }
+
+        async function loadFx() {
+            const base = WIDGETS.fxBase;
+            const target = WIDGETS.fxTarget;
+            const url = `https://open.er-api.com/v6/latest/${encodeURIComponent(base)}`;
+
+            setText("fxSub", "로딩 중...");
+            try {
+                const res = await fetch(url, { cache: "no-store" });
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+
+                const rate = data && data.rates ? data.rates[target] : null;
+                const updated = data && (data.time_last_update_utc || data.time_last_update_unix);
+                if (rate === null || rate === undefined) throw new Error("rate not found");
+
+                setText("fxValue", `${Number(rate).toFixed(2)}`);
+                setText("fxSub", `${base} 1 = ${target} ${Number(rate).toFixed(2)}`);
+                setText("fxMeta", updated ? `업데이트: ${data.time_last_update_utc || ""}` : "");
+                setDot("dotFx", "ok");
+                return true;
+            } catch (e) {
+                setText("fxValue", "불러오기 실패");
+                setText("fxSub", "outbound/방화벽 확인");
+                setText("fxMeta", String(e));
+                setDot("dotFx", "fail");
+                return false;
+            }
+        }
+
+        async function loadTime() {
+            try {
+                const now = new Date();
+                setText("timeValue", fmtTimeHHMM(now));
+                setText("timeSub", now.toLocaleString("ko-KR", { timeZone: "Asia/Seoul" }));
+                setText("timeMeta", "타임존: Asia/Seoul (KST)");
+                setDot("dotTime", "ok");
+                return true;
+            } catch (e) {
+                setText("timeValue", "불러오기 실패");
+                setText("timeSub", "브라우저 렌더링 오류");
+                setText("timeMeta", String(e));
+                setDot("dotTime", "fail");
+                return false;
+            }
+        }
+
+        async function loadEnergyHealth() {
+            try {
+                const data = await fetchJson("/api/energy/health");
+                if (data && data.status === "ok") {
+                    setDot("dotEnergy", "ok");
+                    return true;
+                }
+                throw new Error("health not ok");
+            } catch (e) {
+                setDot("dotEnergy", "fail");
+                return false;
+            }
+        }
+
+        function pickRegionValue(row, key) {
+            const v = row ? row[key] : null;
+            if (v === null || v === undefined || v === "") return null;
+            return v;
+        }
+
+        async function loadEnergyKpx() {
+            setText("energySub", "로딩 중...");
+            try {
+                const json = await fetchJson("/api/energy/kpx/now?page=1&perPage=2");
+                const rows = Array.isArray(json.data) ? json.data : [];
+                if (rows.length === 0) throw new Error("no data");
+
+                let latest = rows[0];
+                for (const r of rows) {
+                    const y = Number(r["연도"]);
+                    const ly = Number(latest["연도"]);
+                    if (!Number.isNaN(y) && !Number.isNaN(ly) && y > ly) latest = r;
+                }
+
+                const year = latest["연도"] || "—";
+                const seoul = pickRegionValue(latest, "서울");
+                const busan = pickRegionValue(latest, "부산");
+                const incheon = pickRegionValue(latest, "인천");
+
+                setText("energyValue", `연도 ${year}`);
+                setText("energySub", `서울 ${seoul ?? "—"} · 부산 ${busan ?? "—"} · 인천 ${incheon ?? "—"}`);
+
+                const cacheTxt = (json.cache === true) ? "HIT" : "MISS";
+                setText("energyMeta",
+                    `rows=${rows.length} page=${json.page}/${Math.ceil((json.totalCount || 0) / (json.perPage || 1)) || "?"}
+` +
+                    `cache=${cacheTxt}
+key=${json.cache_key || ""}`
+                );
+                return true;
+            } catch (e) {
+                setText("energyValue", "불러오기 실패");
+                setText("energySub", "/api/energy 연결 확인");
+                setText("energyMeta", String(e));
+                return false;
+            }
+        }
+
+        async function refreshWidgets() {
+            if (!isLoggedIn()) return;
+            await loadEnergyHealth();
+            await loadEnergyKpx();
+            await Promise.allSettled([loadWeather(), loadFx(), loadTime()]);
+        }
+
+        async function refreshAll() {
+            await refreshWidgets();
+        }
+
+        /* ================== 초기화 ================== */
+        loadRandomQuote();
+        window.addEventListener("load", () => {
+            initAuthUI();
+            bindLoginEnter();
+            refreshAll();
+        });
+
+        // 위젯 5분마다 갱신 + 시간은 1초마다
+        setInterval(() => { if (isLoggedIn()) refreshWidgets(); }, 5 * 60 * 1000);
+        setInterval(() => { if (isLoggedIn()) loadTime(); }, 1000);
+
+        // 모델명 표시(나중에 실제로는 backend에서 내려받아 세팅)
+        document.getElementById("modelName").textContent = "Ollama (local)";
+    </script>
+</body>
+
+</html>
