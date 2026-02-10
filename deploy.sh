@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Configuration
-PROJECT_DIR="/root/web-v2"  # Updated to match actual server path
+PROJECT_DIR="/root/web-v2"  # Update this path if different
 IMAGE_NAME="dashboard"
-IMAGE_TAG="energy5" # Updated tag for this deployment
+IMAGE_TAG="latest" # Updated tag for this deployment
 HARBOR_URL="10.2.2.40:5000/library/web-v2-dashboard"
 DEPLOYMENT_NAME="web-v2-dashboard"
 
