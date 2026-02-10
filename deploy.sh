@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Configuration
-PROJECT_DIR="/home/k8s-master/web"  # Update this path if different
+PROJECT_DIR="/root/web-v2"  # Updated to match actual server path
 IMAGE_NAME="dashboard"
 IMAGE_TAG="energy5" # Updated tag for this deployment
 HARBOR_URL="10.2.2.40:5000/library/web-v2-dashboard"
