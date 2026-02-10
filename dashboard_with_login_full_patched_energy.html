@@ -1,13 +1,12 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Team2 통합 대시보드</title>
+    <title>Q&A 대시보드</title>
     <style>
         /* =========================================
-           [CSS] 디자인 및 레이아웃
+           [스타일] 원본 CSS 100% 복구 + 알약 버튼 적용
            ========================================= */
         * {
             margin: 0;
@@ -22,8 +21,7 @@
             display: flex;
             flex-direction: column;
             padding: 20px;
-            padding-bottom: 190px;
-            /* 하단 위젯 바 공간 확보 */
+            padding-bottom: 190px; /* 하단 바 공간 */
         }
 
         .container {
@@ -33,25 +31,27 @@
             display: flex;
             flex-direction: column;
             gap: 40px;
-            padding-top: 110px;
+            padding-top: 60px;
         }
 
-        /* 명언 카드 */
+        /* 랜덤 명언 카드 */
         .quote-card {
             background: white;
             border-radius: 16px;
             padding: 30px 40px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 20px rgba(0, 0, 0, 0.03);
             text-align: center;
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
 
         .quote-card:hover {
             transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08), 0 15px 30px rgba(0, 0, 0, 0.05);
         }
 
         .quote-text {
             font-size: 20px;
+            font-weight: 400;
             color: #2c3e50;
             line-height: 1.6;
             margin-bottom: 12px;
@@ -78,7 +78,7 @@
             font-weight: 500;
         }
 
-        /* 메인 섹션 & 질문 입력 */
+        /* 메인 질문 영역 */
         .main-section {
             display: flex;
             flex-direction: column;
@@ -97,6 +97,7 @@
             border: 2px solid #e2e8f0;
             border-radius: 24px;
             background: white;
+            color: #2c3e50;
             outline: none;
             transition: all 0.3s ease;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
@@ -105,6 +106,10 @@
         .question-input:focus {
             border-color: #7c3aed;
             box-shadow: 0 6px 12px rgba(124, 58, 237, 0.15);
+        }
+
+        .question-input::placeholder {
+            color: #94a3b8;
         }
 
         .send-button {
@@ -122,35 +127,44 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            transition: all 0.3s ease;
             box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
-            transition: all 0.2s;
         }
 
         .send-button:hover {
+            background: linear-gradient(135deg, #6d28d9 0%, #4f46e5 100%);
             transform: translateY(-50%) scale(1.05);
+            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
         }
 
-        /* [요청 반영] 질문 예시 버튼 (둥근 알약 스타일) */
+        .send-button:active {
+            transform: translateY(-50%) scale(0.95);
+        }
+
+        .send-button svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        /* 질문 예시 버튼 (요청하신 둥근 알약 모양 적용) */
         .example-questions {
             display: flex;
             flex-wrap: wrap;
-            gap: 10px;
+            gap: 12px;
             justify-content: center;
         }
 
         .example-btn {
             padding: 12px 24px;
-            /* 넉넉한 여백 */
             background: white;
             border: 1px solid #e2e8f0;
-            border-radius: 999px;
-            /* 완전 둥근 알약 모양 */
+            border-radius: 999px; /* 완전 둥근 모양 */
             font-size: 14px;
             font-weight: 600;
             color: #64748b;
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.03);
         }
 
         .example-btn:hover {
@@ -167,8 +181,12 @@
             border-radius: 16px;
             padding: 40px;
             min-height: 200px;
-            display: none;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            display: none; /* JS에서 active 클래스로 제어 */
+            align-items: center;
+            justify-content: center;
+            color: #94a3b8;
+            font-size: 16px;
         }
 
         .response-area.active {
@@ -186,38 +204,34 @@
             display: flex;
             flex-direction: column;
             gap: 12px;
+            padding: 8px 4px;
         }
-
         .chat-msg {
             display: flex;
         }
-
         .chat-msg.user {
             justify-content: flex-end;
         }
-
         .chat-bubble {
             max-width: 80%;
             border-radius: 14px;
             padding: 10px 12px;
-            border: 1px solid #e5e7eb;
-            background: #ffffff;
             line-height: 1.4;
             font-size: 14px;
+            border: 1px solid #e5e7eb;
+            background: #ffffff;
         }
-
         .chat-msg.user .chat-bubble {
             background: #f5f3ff;
             border-color: #ddd6fe;
         }
-
         .chat-meta {
             font-size: 11px;
             color: #94a3b8;
             margin-top: 4px;
         }
 
-        /* 하단 위젯 바 */
+        /* 하단 정보 카드 */
         .info-grid {
             position: fixed;
             left: 50%;
@@ -237,11 +251,19 @@
             padding: 12px 14px;
             border: 1px solid #eef2f7;
             box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .info-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08);
         }
 
         .info-title {
             display: flex;
+            align-items: center;
             justify-content: space-between;
+            gap: 10px;
             font-size: 14px;
             font-weight: 700;
             color: #334155;
@@ -253,7 +275,8 @@
             font-weight: 600;
             color: #7c3aed;
             background: #f5f3ff;
-            padding: 4px 8px;
+            border: 1px solid #ede9fe;
+            padding: 4px 10px;
             border-radius: 999px;
         }
 
@@ -267,339 +290,179 @@
         .info-sub {
             font-size: 12px;
             color: #64748b;
+            line-height: 1.4;
         }
 
         .mini-muted {
             font-size: 11px;
             color: #94a3b8;
-            margin-top: 6px;
+            margin-top: 8px;
         }
 
+        /* 반응형 */
         @media (max-width: 900px) {
-            .info-grid {
-                grid-template-columns: repeat(2, 1fr);
-            }
+            .info-grid { grid-template-columns: repeat(2, 1fr); bottom: 10px; }
+        }
+        @media (max-width: 520px) {
+            .info-grid { grid-template-columns: 1fr; }
         }
 
-        @media (max-width: 500px) {
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* =========================================
-           [로그인 화면 & 툴바 스타일]
-           ========================================= */
-        .hidden {
-            display: none !important;
-        }
+        /* ===== 로그인 화면 디자인 (원본 복구) ===== */
+        .hidden { display: none !important; }
 
         #loginView {
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            padding: 24px;
         }
 
         .login-shell {
             width: 100%;
-            max-width: 1000px;
+            max-width: 1100px;
             display: grid;
             grid-template-columns: 1.2fr 0.8fr;
-            gap: 20px;
+            gap: 18px;
+            align-items: stretch;
         }
 
         .login-hero {
             border-radius: 22px;
-            padding: 40px;
+            padding: 38px 40px;
             color: #0f172a;
-            background: radial-gradient(at 20% 20%, rgba(124, 58, 237, 0.15), transparent 50%),
-                linear-gradient(135deg, #f8fafc 0%, #eef2ff 100%);
+            background:
+                radial-gradient(1200px 600px at 20% 20%, rgba(124,58,237,0.18), transparent 50%),
+                radial-gradient(900px 500px at 80% 10%, rgba(99,102,241,0.18), transparent 55%),
+                linear-gradient(135deg, #f8fafc 0%, #eef2ff 45%, #f5f3ff 100%);
             border: 1px solid #e5e7eb;
+            box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
             position: relative;
             overflow: hidden;
         }
 
-        .login-hero h1 {
-            font-size: 32px;
-            margin-bottom: 10px;
-        }
-
-        .login-hero p {
-            font-size: 15px;
-            color: #334155;
-            line-height: 1.6;
-        }
-
+        .login-hero h1 { font-size: 34px; letter-spacing: -0.02em; margin-bottom: 10px; }
+        .login-hero p { font-size: 15px; color: #334155; line-height: 1.6; max-width: 54ch; }
+        .login-hero .hero-badges { margin-top: 18px; display: flex; flex-wrap: wrap; gap: 10px; }
         .hero-pill {
-            display: inline-block;
-            margin-top: 15px;
-            font-size: 12px;
-            font-weight: 700;
-            color: #4f46e5;
-            background: rgba(79, 70, 229, 0.1);
-            padding: 6px 12px;
-            border-radius: 999px;
+            font-size: 12px; font-weight: 700; color: #4f46e5;
+            background: rgba(79,70,229,0.10); border: 1px solid rgba(79,70,229,0.22);
+            padding: 6px 10px; border-radius: 999px;
         }
 
         .login-panel {
             background: white;
-            border-radius: 22px;
-            padding: 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
             border: 1px solid #eef2f7;
+            border-radius: 22px;
+            padding: 30px 26px;
+            box-shadow: 0 10px 30px rgba(2, 6, 23, 0.10);
             display: flex;
             flex-direction: column;
             justify-content: center;
         }
 
-        .login-title {
-            font-size: 20px;
-            font-weight: 800;
-            margin-bottom: 5px;
-        }
-
-        .login-desc {
-            font-size: 13px;
-            color: #64748b;
-            margin-bottom: 20px;
-        }
-
-        .login-field {
-            margin-bottom: 15px;
-        }
-
-        .login-field label {
-            display: block;
-            font-size: 12px;
-            font-weight: 700;
-            color: #334155;
-            margin-bottom: 5px;
-        }
-
+        .login-title { font-size: 20px; font-weight: 800; color: #0f172a; margin-bottom: 8px; }
+        .login-desc { font-size: 13px; color: #64748b; margin-bottom: 18px; line-height: 1.5; }
+        .login-field { display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; }
+        .login-field label { font-size: 12px; font-weight: 700; color: #334155; }
         .login-input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            outline: none;
-            transition: 0.2s;
+            width: 100%; padding: 14px 14px;
+            border: 2px solid #e2e8f0; border-radius: 14px;
+            outline: none; font-size: 14px; transition: all 0.2s ease;
         }
+        .login-input:focus { border-color: #7c3aed; box-shadow: 0 0 0 4px rgba(124,58,237,0.10); }
 
-        .login-input:focus {
-            border-color: #7c3aed;
-        }
-
+        .login-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
         .btn-primary {
-            width: 100%;
-            padding: 12px;
-            border: none;
-            border-radius: 12px;
-            background: #7c3aed;
-            color: white;
-            font-weight: 700;
-            cursor: pointer;
-            margin-bottom: 8px;
+            padding: 12px 14px; border: none; border-radius: 14px;
+            background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
+            color: white; font-weight: 800; cursor: pointer;
         }
-
-        .btn-primary:hover {
-            background: #6d28d9;
-        }
-
         .btn-ghost {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #e2e8f0;
-            border-radius: 12px;
-            background: white;
-            color: #334155;
-            font-weight: 700;
-            cursor: pointer;
+            padding: 12px 14px; border-radius: 14px; border: 1px solid #e2e8f0;
+            background: white; color: #334155; font-weight: 800; cursor: pointer;
         }
 
-        .login-links {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 10px;
-            font-size: 13px;
-        }
+        .login-links { display: flex; justify-content: space-between; margin-top: 15px; font-size: 13px; }
+        .btn-link { border: none; background: transparent; padding: 5px; font-size: 13px; font-weight: 700; color: #7c3aed; cursor: pointer; }
+        .btn-link:hover { text-decoration: underline; }
+        .login-hint { margin-top: 12px; font-size: 12px; color: #ef4444; line-height: 1.5; }
 
-        .link-btn {
-            background: none;
-            border: none;
-            color: #7c3aed;
-            font-weight: 600;
-            cursor: pointer;
-        }
+        /* [추가] 회원가입/비번찾기 패널 스타일 */
+        #authExtra { margin-top: 15px; padding-top: 15px; border-top: 1px solid #e2e8f0; }
+        .extra-title { font-size: 14px; font-weight: 700; color: #334155; margin-bottom: 10px; }
 
-        .link-btn:hover {
-            text-decoration: underline;
-        }
-
-        /* [요청 반영] 회원가입/비번찾기 추가 패널 */
-        #authExtra {
-            margin-top: 15px;
-            padding-top: 15px;
-            border-top: 1px solid #eee;
-        }
-
-        .extra-title {
-            font-size: 14px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            color: #334155;
-        }
-
-        /* 상단 툴바 */
+        /* 툴바 */
         #toolbar {
-            position: fixed;
-            top: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 40px);
-            max-width: 900px;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(8px);
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 10px 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 100;
+            position: fixed; top: 12px; left: 50%; transform: translateX(-50%);
+            width: calc(100% - 40px); max-width: 900px;
+            background: rgba(255,255,255,0.90); backdrop-filter: blur(10px);
+            border: 1px solid #e2e8f0; border-radius: 16px; padding: 10px 12px;
+            display: flex; justify-content: space-between; align-items: center;
+            z-index: 60; box-shadow: 0 6px 20px rgba(2, 6, 23, 0.08);
         }
+        .tb-left { display: flex; align-items: center; gap: 10px; color: #0f172a; font-weight: 900; }
+        .tb-chip { font-size: 12px; font-weight: 800; color: #7c3aed; background: #f5f3ff; border: 1px solid #ede9fe; padding: 4px 10px; border-radius: 999px; }
+        .tb-center { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: center; padding: 0 10px; }
+        .tb-ind { display: inline-flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: 999px; border: 1px solid #e2e8f0; background: rgba(248, 250, 252, 0.8); font-size: 12px; font-weight: 800; color: #0f172a; user-select: none; }
+        .dot { width: 9px; height: 9px; border-radius: 50%; background: #94a3b8; box-shadow: 0 0 0 2px rgba(148,163,184,0.20); }
+        .ok .dot { background: #22c55e; } .bad .dot { background: #ef4444; }
+        .tb-right { display: flex; align-items: center; gap: 8px; }
+        .tb-btn { padding: 8px 12px; border-radius: 999px; border: 1px solid #e2e8f0; background: white; font-size: 13px; font-weight: 800; cursor: pointer; color: #334155; }
+        .tb-btn:hover { border-color: #7c3aed; color: #7c3aed; background: #f5f3ff; }
 
-        .tb-left {
-            font-weight: 900;
-            color: #0f172a;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .tb-chip {
-            font-size: 11px;
-            background: #f1f5f9;
-            padding: 4px 8px;
-            border-radius: 6px;
-            color: #64748b;
-        }
-
-        .tb-center {
-            display: flex;
-            gap: 10px;
-        }
-
-        .tb-ind {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 12px;
-            font-weight: 700;
-            color: #334155;
-        }
-
-        .dot {
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #ccc;
-        }
-
-        .ok .dot {
-            background: #22c55e;
-        }
-
-        .bad .dot {
-            background: #ef4444;
-        }
-
-        .tb-btn {
-            padding: 6px 12px;
-            border: 1px solid #e2e8f0;
-            background: white;
-            border-radius: 8px;
-            font-size: 12px;
-            font-weight: 700;
-            cursor: pointer;
-        }
-
-        .guestbar {
-            position: fixed;
-            top: 12px;
-            right: 20px;
-            z-index: 100;
-        }
-
-        .gbtn {
-            padding: 8px 12px;
-            border: 1px solid #ddd;
-            background: white;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        @media (max-width: 900px) {
-            .login-shell {
-                grid-template-columns: 1fr;
-            }
-
-            .login-hero {
-                padding: 30px;
-            }
-        }
+        .guestbar { position: sticky; top: 12px; z-index: 50; display: flex; justify-content: flex-end; gap: 10px; margin: 12px auto 0; max-width: 900px; padding: 0 2px; }
+        .gbtn { border: 1px solid rgba(0,0,0,0.10); background: rgba(255,255,255,0.85); backdrop-filter: blur(6px); padding: 10px 12px; border-radius: 12px; font-weight: 600; cursor: pointer; }
     </style>
 </head>
 
 <body>
-
     <div id="loginView">
         <div class="login-shell">
             <div class="login-hero">
                 <h1>Team2 통합 대시보드</h1>
-                <p>날씨 · 전력 · 환율 · 시간 정보를 한눈에 확인하세요.</p>
-                <span class="hero-pill">K8s 기반 통합 관제</span>
+                <p>날씨 · 전력(KPX) · 환율 · 시간 정보를 한 화면에서 확인하고, 질문 입력을 통해 데이터를 조회합니다.</p>
+                <div class="hero-badges"><span class="hero-pill">K8s 기반 통합 관제 UI</span></div>
             </div>
+
             <div class="login-panel">
                 <div class="login-title">로그인</div>
-                <div class="login-desc">관리자(admin)는 상단 툴바가 활성화됩니다.</div>
+                <div class="login-desc">관리자(admin)는 상단 툴바가 노출됩니다.</div>
 
                 <div class="login-field">
                     <label>아이디</label>
-                    <input class="login-input" id="loginUser" placeholder="admin 또는 계정">
+                    <input class="login-input" id="loginUser" type="text" placeholder="admin 또는 계정">
                 </div>
                 <div class="login-field">
                     <label>비밀번호</label>
                     <input class="login-input" id="loginPass" type="password" placeholder="admin123">
                 </div>
 
-                <button class="btn-primary" id="btnLogin">로그인</button>
-                <button class="btn-ghost" id="btnGuest">비회원 입장</button>
+                <div class="login-actions">
+                    <button class="btn-primary" id="btnLogin">로그인</button>
+                    <button class="btn-ghost" id="btnGuest">비회원 입장</button>
+                </div>
 
                 <div class="login-links">
-                    <button class="link-btn" id="btnShowSignup">회원가입</button>
-                    <button class="link-btn" id="btnShowReset">비밀번호 찾기</button>
+                    <button class="btn-link" id="btnShowSignup">회원가입</button>
+                    <button class="btn-link" id="btnShowReset">비밀번호 재설정</button>
                 </div>
-                <div id="loginHint" style="font-size:12px; color:#ef4444; margin-top:10px;"></div>
+                <div id="loginHint" class="login-hint"></div>
 
                 <div id="authExtra" class="hidden">
                     <div id="signupPane" class="hidden">
-                        <div class="extra-title">새 계정 만들기</div>
-                        <input class="login-input" id="suUser" placeholder="사용할 아이디" style="margin-bottom:8px;">
-                        <input class="login-input" id="suPass" type="password" placeholder="사용할 비밀번호"
-                            style="margin-bottom:8px;">
+                        <div class="extra-title">회원가입</div>
+                        <input class="login-input" id="suUser" placeholder="아이디 (4자 이상)" style="margin-bottom:8px">
+                        <input class="login-input" id="suPass" type="password" placeholder="비밀번호 (6자 이상)" style="margin-bottom:8px">
                         <button class="btn-primary" id="btnDoSignup">가입하기</button>
-                        <button class="link-btn" onclick="closeExtra()" style="width:100%">취소</button>
+                        <button class="btn-ghost" onclick="closeExtra()">취소</button>
                     </div>
                     <div id="resetPane" class="hidden">
                         <div class="extra-title">비밀번호 재설정</div>
-                        <input class="login-input" id="rpUser" placeholder="가입된 아이디" style="margin-bottom:8px;">
-                        <input class="login-input" id="rpNewPass" type="password" placeholder="새 비밀번호"
-                            style="margin-bottom:8px;">
+                        <input class="login-input" id="rpUser" placeholder="가입한 아이디" style="margin-bottom:8px">
+                        <input class="login-input" id="rpNewPass" type="password" placeholder="새 비밀번호" style="margin-bottom:8px">
                         <button class="btn-primary" id="btnDoReset">변경하기</button>
-                        <button class="link-btn" onclick="closeExtra()" style="width:100%">취소</button>
+                        <button class="btn-ghost" onclick="closeExtra()">취소</button>
                     </div>
                 </div>
             </div>
@@ -632,7 +495,7 @@
 
             <div class="main-section">
                 <div class="input-wrapper">
-                    <input type="text" class="question-input" id="questionInput" placeholder="질문을 입력하세요...">
+                    <input type="text" class="question-input" id="questionInput" placeholder="질문을 입력하세요..." autocomplete="off">
                     <button class="send-button" id="sendButton">▲</button>
                 </div>
                 <div class="example-questions">
@@ -675,13 +538,11 @@
 
     <script>
         // =========================================
-        // [Logic] 전체 기능 구현
+        // [설정] 핵심 상수
         // =========================================
         const AUTH_KEY = "team2_auth_v1";
-        const USERS_KEY = "team2_users_v1"; // 회원가입 정보 저장용
-
-        // API 설정 (에너지는 내부망, 나머지는 외부망)
-        const API_BASE = "";
+        const USERS_KEY = "team2_users_v1";
+        const API_BASE = ""; 
         const WIDGETS = {
             energyUrl: "/api/energy/kpx/now?page=1&perPage=2",
             fxUrl: "https://open.er-api.com/v6/latest/USD",
@@ -689,7 +550,7 @@
         };
         const HEALTH = { weather: null, energy: null, fx: null, time: null };
 
-        // --- 1. 인증 및 UI 핸들링 ---
+        // --- 1. 인증 로직 (회원가입/비번찾기/로그인) ---
         function loadUsers() { return JSON.parse(localStorage.getItem(USERS_KEY) || "{}"); }
         function saveUsers(u) { localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
 
@@ -710,11 +571,11 @@
         document.getElementById("btnDoSignup").onclick = () => {
             const u = document.getElementById("suUser").value.trim();
             const p = document.getElementById("suPass").value.trim();
-            if (!u || !p) return alert("아이디와 비밀번호를 입력하세요.");
-            if (u === "admin") return alert("admin 아이디는 사용할 수 없습니다.");
+            if(!u || !p) return alert("아이디와 비밀번호를 입력하세요.");
+            if(u === "admin") return alert("admin 아이디는 사용할 수 없습니다.");
 
             const users = loadUsers();
-            if (users[u]) return alert("이미 존재하는 아이디입니다.");
+            if(users[u]) return alert("이미 존재하는 아이디입니다.");
 
             users[u] = { pass: p, joined: Date.now() };
             saveUsers(users);
@@ -722,14 +583,14 @@
             closeExtra();
         };
 
-        // 비번 변경 실행
+        // 비번 재설정 실행
         document.getElementById("btnDoReset").onclick = () => {
             const u = document.getElementById("rpUser").value.trim();
             const p = document.getElementById("rpNewPass").value.trim();
-            if (!u || !p) return alert("정보를 입력하세요.");
+            if(!u || !p) return alert("정보를 입력하세요.");
 
             const users = loadUsers();
-            if (!users[u]) return alert("존재하지 않는 아이디입니다.");
+            if(!users[u]) return alert("존재하지 않는 아이디입니다.");
 
             users[u].pass = p;
             saveUsers(users);
@@ -741,7 +602,7 @@
         document.getElementById("btnLogin").onclick = () => {
             const u = document.getElementById("loginUser").value.trim();
             const p = document.getElementById("loginPass").value.trim();
-
+            
             // 관리자 확인
             if (u === "admin" && p === "admin123") {
                 localStorage.setItem(AUTH_KEY, JSON.stringify({ user: u, role: "admin" }));
@@ -754,7 +615,7 @@
                 localStorage.setItem(AUTH_KEY, JSON.stringify({ user: u, role: "user" }));
                 location.reload();
             } else {
-                document.getElementById("loginHint").textContent = "아이디 또는 비밀번호가 일치하지 않습니다.";
+                document.getElementById("loginHint").textContent = "아이디 또는 비밀번호가 틀렸습니다.";
             }
         };
 
@@ -767,21 +628,17 @@
         document.getElementById("tbLogout").onclick = logout;
         document.getElementById("guestLogout").onclick = logout;
 
-        // --- 2. 데이터 위젯 (API 로직 유지) ---
+        // --- 2. 데이터 위젯 (API 로직) ---
         async function loadEnergy() {
             try {
                 const res = await fetch(API_BASE + WIDGETS.energyUrl);
                 const json = await res.json();
                 const row = json.data[0];
                 const year = new Date().getFullYear();
-
                 document.getElementById("energyValue").textContent = `연도 ${year}`;
-                // 서울, 부산, 인천 데이터만 추출
-                document.getElementById("energySub").textContent =
-                    `서울 ${row["서울"] || '-'} · 부산 ${row["부산"] || '-'} · 인천 ${row["인천"] || '-'}`;
-
+                document.getElementById("energySub").textContent = `서울 ${row["서울"]||'-'} · 부산 ${row["부산"]||'-'} · 인천 ${row["인천"]||'-'}`;
                 HEALTH.energy = true;
-            } catch (e) {
+            } catch {
                 document.getElementById("energyValue").textContent = "데이터 없음";
                 HEALTH.energy = false;
             }
@@ -793,7 +650,6 @@
                 const res = await fetch(WIDGETS.fxUrl);
                 const data = await res.json();
                 const rate = data.rates["KRW"];
-
                 document.getElementById("fxValue").textContent = rate.toFixed(2);
                 document.getElementById("fxSub").textContent = `1 USD = ${rate.toFixed(2)} KRW`;
                 HEALTH.fx = true;
@@ -808,9 +664,7 @@
             try {
                 const res = await fetch(WIDGETS.weatherUrl);
                 const data = await res.json();
-                const temp = data.current_weather.temperature;
-
-                document.getElementById("weatherValue").textContent = `${temp}°C`;
+                document.getElementById("weatherValue").textContent = `${data.current_weather.temperature}°C`;
                 document.getElementById("weatherSub").textContent = "서울 현재 기온";
                 HEALTH.weather = true;
             } catch { HEALTH.weather = false; }
@@ -819,7 +673,7 @@
 
         function loadTime() {
             const now = new Date();
-            document.getElementById("timeValue").textContent = now.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
+            document.getElementById("timeValue").textContent = now.toLocaleTimeString('ko-KR', { hour12:false, hour:'2-digit', minute:'2-digit' });
             document.getElementById("timeSub").textContent = now.toLocaleDateString('ko-KR');
             HEALTH.time = true;
             updateHealth();
@@ -828,7 +682,7 @@
         function updateHealth() {
             Object.keys(HEALTH).forEach(k => {
                 const el = document.getElementById(`ind${k.charAt(0).toUpperCase() + k.slice(1)}`);
-                if (el) {
+                if(el) {
                     el.classList.remove("ok", "bad");
                     el.classList.add(HEALTH[k] ? "ok" : "bad");
                 }
@@ -844,9 +698,9 @@
         // --- 3. 채팅 & 기타 ---
         function loadQuote() {
             const list = [
-                { t: "Simplicity is the soul of efficiency.", a: "Austin Freeman" },
-                { t: "Data is the new oil.", a: "Clive Humby" },
-                { t: "Code never lies, comments sometimes do.", a: "Ron Jeffries" }
+                {t:"Simplicity is the soul of efficiency.", a:"Austin Freeman"},
+                {t:"Data is the new oil.", a:"Clive Humby"},
+                {t:"Code never lies, comments sometimes do.", a:"Ron Jeffries"}
             ];
             const r = list[Math.floor(Math.random() * list.length)];
             document.getElementById("quoteText").textContent = r.t;
@@ -856,21 +710,20 @@
         function sendQuestion() {
             const inp = document.getElementById("questionInput");
             const q = inp.value.trim();
-            if (!q) return;
-
+            if(!q) return;
+            
             const area = document.getElementById("responseArea");
             const hist = document.getElementById("chatHistory");
             area.classList.add("active");
-
+            
             hist.innerHTML += `<div class="chat-msg user"><div class="chat-bubble">${q}</div></div>`;
             inp.value = "";
-
-            // 봇 응답 (키워드 매칭)
+            
             let ans = "질문을 이해하지 못했습니다. (날씨, 전력, 환율)";
-            if (q.includes("날씨")) ans = `현재 기온은 ${document.getElementById("weatherValue").textContent} 입니다.`;
-            else if (q.includes("환율")) ans = `현재 환율은 ${document.getElementById("fxValue").textContent}원 입니다.`;
-            else if (q.includes("전력")) ans = `전력 정보: ${document.getElementById("energySub").textContent}`;
-
+            if(q.includes("날씨")) ans = `현재 기온은 ${document.getElementById("weatherValue").textContent} 입니다.`;
+            else if(q.includes("환율")) ans = `현재 환율은 ${document.getElementById("fxValue").textContent}원 입니다.`;
+            else if(q.includes("전력")) ans = `전력 정보: ${document.getElementById("energySub").textContent}`;
+            
             setTimeout(() => {
                 hist.innerHTML += `<div class="chat-msg"><div class="chat-bubble">${ans}</div></div>`;
                 hist.scrollTop = hist.scrollHeight;
@@ -879,7 +732,7 @@
 
         document.getElementById("sendButton").onclick = sendQuestion;
         document.getElementById("questionInput").addEventListener("keypress", (e) => {
-            if (e.key === "Enter") sendQuestion();
+            if(e.key === "Enter") sendQuestion();
         });
 
         // 질문 예시 버튼 클릭 연결
@@ -896,20 +749,19 @@
             if (auth) {
                 document.getElementById("loginView").classList.add("hidden");
                 document.getElementById("dashboardView").classList.remove("hidden");
-
+                
                 if (auth.role === "admin") {
                     document.getElementById("toolbar").classList.remove("hidden");
                     document.getElementById("tbUserChip").textContent = auth.user;
                 } else {
                     document.getElementById("guestBar").classList.remove("hidden");
                 }
-
+                
                 loadQuote();
-                refreshWidgets(); // 최초 로드
+                refreshWidgets(); 
                 setInterval(loadTime, 30000);
             }
         };
     </script>
 </body>
-
 </html>
