@@ -25,3 +25,10 @@ spec:
             name: energy-api
             port:
               number: 8000
+      - path: /api/weather(/|$)(.*)
+        pathType: Prefix
+        backend:
+          service:
+            name: kma-api
+            port:
+              number: 8000

@@ -1,0 +1,67 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    argocd.argoproj.io/tracking-id: frontcode:networking.k8s.io/Ingress:production/production-main-ingress
+    kubectl.kubernetes.io/last-applied-configuration: |
+      {"apiVersion":"networking.k8s.io/v1","kind":"Ingress","metadata":{"annotations":{"argocd.argoproj.io/tracking-id":"frontcode:networking.k8s.io/Ingress:production/production-main-ingress","nginx.ingress.kubernetes.io/app-root":"/main","nginx.ingress.kubernetes.io/rewrite-target":"/$2"},"name":"production-main-ingress","namespace":"production"},"spec":{"ingressClassName":"nginx","rules":[{"host":"cafekec.shop","http":{"paths":[{"backend":{"service":{"name":"web-v2-service","port":{"number":80}}},"path":"/main(/|$)(.*)","pathType":"Prefix"},{"backend":{"service":{"name":"ai-test","port":{"number":3000}}},"path":"/api/ai(/|$)(.*)","pathType":"Prefix"},{"backend":{"service":{"name":"ai-test","port":{"number":3000}}},"path":"/ai(/|$)(.*)","pathType":"Prefix"},{"backend":{"service":{"name":"kma-api","port":{"number":8080}}},"path":"/api/main/weather(/|$)(.*)","pathType":"Prefix"},{"backend":{"service":{"name":"energy-api","port":{"number":8000}}},"path":"/api/main/energy(/|$)(.*)","pathType":"Prefix"},{"backend":{"service":{"name":"energy-api","port":{"number":8000}}},"path":"/health/global-status","pathType":"Exact"}]}}]}}
+    nginx.ingress.kubernetes.io/app-root: /main
+    nginx.ingress.kubernetes.io/rewrite-target: /$2
+  creationTimestamp: "2026-02-13T04:41:02Z"
+  generation: 1
+  name: production-main-ingress
+  namespace: production
+  resourceVersion: "1566906"
+  uid: 70cc3fdc-eedd-4387-9aca-57d91b3f2ce7
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: cafekec.shop
+    http:
+      paths:
+      - backend:
+          service:
+            name: web-v2-service
+            port:
+              number: 80
+        path: /main(/|$)(.*)
+        pathType: Prefix
+      - backend:
+          service:
+            name: ai-test
+            port:
+              number: 3000
+        path: /api/ai(/|$)(.*)
+        pathType: Prefix
+      - backend:
+          service:
+            name: ai-test
+            port:
+              number: 3000
+        path: /ai(/|$)(.*)
+        pathType: Prefix
+      - backend:
+          service:
+            name: kma-api
+            port:
+              number: 8080
+        path: /api/main/weather(/|$)(.*)
+        pathType: Prefix
+      - backend:
+          service:
+            name: energy-api
+            port:
+              number: 8000
+        path: /api/main/energy(/|$)(.*)
+        pathType: Prefix
+      - backend:
+          service:
+            name: energy-api
+            port:
+              number: 8000
+        path: /health/global-status
+        pathType: Exact
+status:
+  loadBalancer:
+    ingress:
+    - ip: 10.2.2.101

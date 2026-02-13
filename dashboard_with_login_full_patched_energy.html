@@ -1,880 +1,820 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Q&A 대시보드</title>
-    <style>
-        /* =========================================
-           [스타일] 제공해주신 CSS 디자인 원본 유지
-           ========================================= */
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Team2 통합 대시보드 v7.4 + AI(Ollama)</title>
+  <style>
+    :root{
+      --bg-color:#f8fafc; --card-bg:#ffffff; --text-main:#1e293b; --text-sub:#64748b;
+      --border:#e2e8f0; --accent:#8b5cf6; --accent-hover:#7c3aed; --shadow:rgba(0,0,0,0.05);
+      --chat-user-bg:#8b5cf6; --chat-user-text:#fff;
+      --dot-green:#10b981; --dot-red:#ef4444;
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans KR', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e9f2 100%);
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            padding: 20px;
-            padding-bottom: 190px;
-            /* 하단 고정 바 공간 확보 */
-        }
+      --content-w: 980px;
+      --chat-height: 380px;
+    }
+    body.dark-mode{
+      --bg-color:#0f172a; --card-bg:#1e293b; --text-main:#f1f5f9; --text-sub:#94a3b8;
+      --border:#334155; --accent:#a78bfa; --accent-hover:#8b5cf6; --shadow:rgba(0,0,0,0.3);
+      --chat-user-bg:#6366f1;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;transition:background .3s,color .3s;}
+    html,body{
+      height:100%; background:var(--bg-color); color:var(--text-main);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    }
 
-        .container {
-            max-width: 900px;
-            width: 100%;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 40px;
-            padding-top: 110px;
-        }
+    /* --- Login View --- */
+    #loginView{ position:fixed; inset:0; display:flex; align-items:center; justify-content:center; background:#f1f5f9; z-index:9999; }
+    .login-shell{
+      width:100%; max-width: 980px; display:grid; grid-template-columns: 1.1fr 0.9fr;
+      background:white; border-radius:24px; box-shadow:0 25px 50px -12px rgba(0,0,0,.1); overflow:hidden;
+    }
+    .login-hero{
+      padding:50px; color:#fff;
+      background:linear-gradient(135deg,#4338ca 0%,#6d28d9 50%,#7c3aed 100%);
+      display:flex; flex-direction:column; justify-content:center;
+    }
+    .login-panel{ padding:50px 40px; display:flex; flex-direction:column; justify-content:center; overflow-y:auto; max-height:90vh; }
+    .login-title{font-size:22px;font-weight:900;color:#0f172a;margin-bottom:6px;}
+    .login-desc{font-size:13px;color:#64748b;margin-bottom:18px;}
+    .login-input{ width:100%; padding:14px; border:2px solid #e2e8f0; border-radius:12px; outline:none; font-size:14px; margin-bottom:15px; }
+    .login-input:focus{border-color:#8b5cf6;background:#fcfaff;}
+    .btn-primary{ width:100%; padding:14px; border:none; border-radius:12px; background:#8b5cf6; color:#fff; font-weight:900; cursor:pointer; margin-bottom:10px; font-size:15px; }
+    .btn-ghost{ width:100%; padding:14px; border:1px solid #e2e8f0; border-radius:12px; background:#fff; color:#475569; font-weight:900; cursor:pointer; font-size:15px; }
+    .login-links{display:flex; justify-content:space-between; margin-top:20px; font-size:13px;}
+    .link-btn{background:none;border:none;color:#8b5cf6;font-weight:900;cursor:pointer;font-size:13px;}
+    .link-btn:hover{text-decoration:underline;color:#7c3aed;}
+    .hidden{display:none !important;}
+    #authExtra{margin-top:20px;padding-top:20px;border-top:1px solid #f1f5f9;}
 
-        /* 랜덤 명언 카드 */
-        .quote-card {
-            background: white;
-            border-radius: 16px;
-            padding: 30px 40px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 10px 20px rgba(0, 0, 0, 0.03);
-            text-align: center;
-            transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
+    /* --- Dashboard Layout --- */
+    #dashboardView{ min-height:100vh; display:flex; flex-direction:column; }
+    .wrap{ width:min(var(--content-w), calc(100% - 40px)); margin:0 auto; }
+    .page{ flex:1; min-height:0; display:flex; flex-direction:column; }
+    .main-area{
+      flex:1; min-height:0;
+      display:flex; flex-direction:column;
+      padding: 18px 0 0 0;
+      gap: 14px;
+    }
+    .bottom-area{
+      margin-top:auto;
+      padding: 8px 0 18px 0;
+    }
 
-        .quote-card:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 12px rgba(0, 0, 0, 0.08), 0 15px 30px rgba(0, 0, 0, 0.05);
-        }
+    /* ========================= TOP BAR ========================= */
+    #toolbar{
+      height:64px; margin-top:16px;
+      background: rgba(255,255,255,.88);
+      backdrop-filter: blur(14px);
+      border:1px solid var(--border);
+      border-radius:999px;
+      box-shadow:0 6px 24px var(--shadow);
+      display:flex; align-items:center; justify-content:space-between;
+      padding:0 18px; gap:12px;
+      flex-shrink:0;
+    }
+    body.dark-mode #toolbar{ background: rgba(30,41,59,.88); }
 
-        .quote-text {
-            font-size: 20px;
-            font-weight: 400;
-            color: #2c3e50;
-            line-height: 1.6;
-            margin-bottom: 12px;
-            font-style: italic;
-        }
+    .tb-left{ display:flex; align-items:center; gap:10px; font-weight:900; min-width:210px; }
+    .tb-logo{
+      width:36px; height:36px; border-radius:999px; display:grid; place-items:center;
+      background: rgba(139,92,246,.12); color: var(--accent); font-weight:900;
+    }
+    .tb-chip{ font-size:12px;background:#f1f5f9;color:var(--text-sub);padding:4px 12px;border-radius:999px;font-weight:900; }
+    body.dark-mode .tb-chip{ background:#0b1220; border:1px solid #223047; }
 
-        .quote-text::before {
-            content: '"';
-            font-size: 28px;
-            color: #7c3aed;
-            margin-right: 4px;
-        }
+    .tb-center{
+      display:flex; align-items:center; gap:10px;
+      flex:1; justify-content:center;
+      overflow:auto; scrollbar-width:none;
+    }
+    .tb-center::-webkit-scrollbar{display:none;}
 
-        .quote-text::after {
-            content: '"';
-            font-size: 28px;
-            color: #7c3aed;
-            margin-left: 4px;
-        }
+    .tb-ind{
+      display:flex; align-items:center; gap:8px;
+      padding:8px 14px;
+      border-radius:999px;
+      border:1px solid var(--border);
+      background: rgba(248,250,252,.6);
+      color: var(--text-sub);
+      font-size:13px; font-weight:900;
+      white-space:nowrap;
+      cursor: default;
+      user-select:none;
+    }
+    body.dark-mode .tb-ind{ background: rgba(15,23,42,.6); }
+    .dot{width:8px;height:8px;border-radius:50%; background:var(--dot-red);}
+    .ok .dot{background:var(--dot-green);}
 
-        .quote-author {
-            font-size: 14px;
-            color: #64748b;
-            font-weight: 500;
-        }
+    .tb-right{ display:flex; align-items:center; gap:8px; justify-content:flex-end; min-width:210px; }
+    .tb-btn{
+      padding:8px 14px; border:1px solid var(--border); background:var(--bg-color);
+      border-radius:999px; font-size:12px; font-weight:900; cursor:pointer; color:var(--text-sub);
+      transition:all .2s ease; white-space:nowrap;
+    }
+    .tb-btn:hover{ border-color:var(--accent); color:var(--accent); }
 
-        /* 메인 질문 영역 */
-        .main-section {
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-        }
+    /* ========================= CONTENT ========================= */
+    .quote-card{
+      background:var(--card-bg);
+      border-radius:16px;
+      padding:24px 34px;
+      box-shadow:0 4px 20px var(--shadow);
+      text-align:center;
+      border:1px solid var(--border);
+    }
+    .quote-text{ font-size:18px; font-weight:700; }
+    .quote-author{ margin-top:8px; color:var(--text-sub); font-weight:700; }
 
-        .input-wrapper {
-            position: relative;
-            width: 100%;
-        }
+    .input-wrapper{ position:relative; width:100%; }
+    .question-input{
+      width:100%;
+      padding:20px 60px 20px 26px;
+      font-size:16px;
+      border:2px solid var(--border);
+      border-radius:999px;
+      background:var(--card-bg);
+      color:var(--text-main);
+      outline:none;
+      box-shadow:0 4px 15px var(--shadow);
+    }
+    .send-button{
+      position:absolute; right:8px; top:50%;
+      transform:translateY(-50%);
+      width:48px; height:48px;
+      border:none; border-radius:50%;
+      background:linear-gradient(135deg,var(--accent) 0%,#6366f1 100%);
+      color:#fff; cursor:pointer;
+    }
 
-        .question-input {
-            width: 100%;
-            padding: 20px 60px 20px 24px;
-            font-size: 16px;
-            border: 2px solid #e2e8f0;
-            border-radius: 24px;
-            background: white;
-            color: #2c3e50;
-            outline: none;
-            transition: all 0.3s ease;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
+    .example-questions{
+      display:flex; flex-wrap:wrap; gap:10px;
+      justify-content:center;
+      margin-top: 10px;
+      margin-bottom: 4px;
+    }
+    .example-btn{
+      padding:8px 18px; background:var(--card-bg);
+      border:1px solid var(--border); border-radius:999px;
+      font-size:13px; font-weight:900; color:var(--text-sub);
+      cursor:pointer; box-shadow:0 2px 5px rgba(0,0,0,.03);
+      transition:all .2s;
+    }
+    .example-btn:hover{ border-color:var(--accent); color:var(--accent); }
 
-        .question-input:focus {
-            border-color: #7c3aed;
-            box-shadow: 0 6px 12px rgba(124, 58, 237, 0.15);
-        }
+    .chat-topbar{
+      display:none;
+      justify-content:flex-end;
+      margin-top: -6px;
+      margin-bottom: -10px;
+    }
+    .chat-topbar.active{ display:flex; }
 
-        .question-input::placeholder {
-            color: #94a3b8;
-        }
+    .clear-chat-out{
+      padding:7px 12px;
+      background: rgba(241,245,249,.9);
+      border:1px solid var(--border);
+      border-radius:999px;
+      font-size:12px;
+      font-weight:900;
+      color:var(--text-sub);
+      cursor:pointer;
+      transition: all .2s;
+    }
+    .clear-chat-out:hover{
+      border-color: var(--accent);
+      color: var(--accent);
+      background: rgba(139,92,246,.08);
+    }
+    body.dark-mode .clear-chat-out{
+      background: rgba(30,41,59,.88);
+      border-color: #334155;
+      color: #cbd5e1;
+    }
 
-        .send-button {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            width: 44px;
-            height: 44px;
-            border: none;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
-            color: white;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(124, 58, 237, 0.3);
-        }
+    .response-area{
+      background:var(--card-bg);
+      border-radius:20px;
+      padding:16px 18px;
+      box-shadow:0 4px 20px var(--shadow);
+      border:1px solid var(--border);
+      display:none;
+      flex-direction:column;
+      gap:10px;
+      margin-top: 0px;
+    }
+    .response-area.active{ display:flex; }
 
-        .send-button:hover {
-            background: linear-gradient(135deg, #6d28d9 0%, #4f46e5 100%);
-            transform: translateY(-50%) scale(1.05);
-            box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
-        }
+    .chat-history{
+      max-height: var(--chat-height);
+      overflow:auto;
+      padding-right:6px;
+    }
 
-        .send-button:active {
-            transform: translateY(-50%) scale(0.95);
-        }
+    .chat-bubble{
+      max-width:80%;
+      border-radius:20px;
+      padding:14px 18px;
+      border:1px solid var(--border);
+      background:var(--bg-color);
+      line-height:1.5;
+      font-size:15px;
+      white-space:pre-wrap;
+    }
+    .chat-msg{ display:flex; margin:10px 0; }
+    .chat-msg.user{ justify-content:flex-end; }
+    .chat-msg.user .chat-bubble{
+      background:var(--chat-user-bg);
+      border-color:var(--chat-user-bg);
+      color:var(--chat-user-text);
+    }
 
-        .send-button svg {
-            width: 20px;
-            height: 20px;
-        }
+    /* ========================= BOTTOM BLOCKS ========================= */
+    .info-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:14px;
+    }
+    .info-card{
+      background:rgba(255,255,255,.8);
+      backdrop-filter:blur(12px);
+      border-radius:16px;
+      padding:14px 16px;
+      border:1px solid rgba(255,255,255,.6);
+      box-shadow:0 8px 32px rgba(0,0,0,.05);
+      text-align:left;
+      min-height:92px;
+    }
+    body.dark-mode .info-card{
+      background:rgba(30,41,59,.85);
+      border-color:rgba(255,255,255,.1);
+    }
+    .info-title{ display:flex; justify-content:space-between; font-size:12px; font-weight:900; color:var(--text-sub); margin-bottom:6px; }
+    .badge{ font-size:11px; background:rgba(139,92,246,.1); color:var(--accent); padding:4px 8px; border-radius:6px; font-weight:900; }
+    .info-value{ font-size:20px; font-weight:900; color:var(--text-main); margin-bottom:4px; }
+    .info-sub{ font-size:12px; color:var(--text-sub); font-weight:900; }
 
-        /* 질문 예시 */
-        .example-questions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: center;
-        }
+    .hint-banner{
+      margin-top:10px; padding:10px 16px; border-radius:14px;
+      border:1px dashed var(--border);
+      color:var(--text-sub);
+      background:rgba(255,255,255,.65);
+      backdrop-filter:blur(10px);
+      box-shadow:0 4px 20px var(--shadow);
+      font-size:13px; font-weight:900; display:none;
+    }
+    .hint-banner strong{ color:var(--text-main); }
 
-        .example-btn {
-            padding: 10px 20px;
-            background: white;
-            border: 1px solid #e2e8f0;
-            border-radius: 20px;
-            font-size: 14px;
-            color: #64748b;
-            cursor: pointer;
-            transition: all 0.3s ease;
-        }
+    #guestHeader{
+      height:60px; margin-top:16px;
+      display:flex; justify-content:flex-end;
+    }
+    .gbtn{
+      padding:8px 16px; background:rgba(255,255,255,.9);
+      border:1px solid var(--border); border-radius:999px;
+      font-size:13px; font-weight:900; cursor:pointer;
+      box-shadow:0 4px 10px rgba(0,0,0,.05);
+    }
+    body.dark-mode .gbtn{ background: rgba(30,41,59,.88); color: var(--text-main); }
 
-        .example-btn:hover {
-            border-color: #7c3aed;
-            color: #7c3aed;
-            background: #f5f3ff;
-        }
-
-        /* 답변 영역 */
-        .response-area {
-            background: white;
-            border-radius: 16px;
-            padding: 40px;
-            min-height: 200px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            color: #94a3b8;
-            font-size: 16px;
-        }
-
-        .response-area.active {
-            display: flex;
-        }
-
-        .response-content {
-            width: 100%;
-        }
-
-        .chat-history {
-            width: 100%;
-            max-height: 360px;
-            overflow: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            padding: 8px 4px;
-        }
-
-        .chat-msg {
-            display: flex;
-        }
-
-        .chat-msg.user {
-            justify-content: flex-end;
-        }
-
-        .chat-bubble {
-            max-width: 80%;
-            border-radius: 14px;
-            padding: 10px 12px;
-            line-height: 1.4;
-            font-size: 14px;
-            border: 1px solid #e5e7eb;
-            background: #ffffff;
-        }
-
-        .chat-msg.user .chat-bubble {
-            background: #f5f3ff;
-            border-color: #ddd6fe;
-        }
-
-        .chat-meta {
-            font-size: 11px;
-            color: #94a3b8;
-            margin-top: 4px;
-        }
-
-        /* 하단 정보 카드 */
-        .info-grid {
-            position: fixed;
-            left: 50%;
-            transform: translateX(-50%);
-            bottom: 12px;
-            width: calc(100% - 40px);
-            max-width: 900px;
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 12px;
-            z-index: 50;
-        }
-
-        .info-card {
-            background: white;
-            border-radius: 14px;
-            padding: 12px 14px;
-            border: 1px solid #eef2f7;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-        }
-
-        .info-title {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 10px;
-            font-size: 14px;
-            font-weight: 700;
-            color: #334155;
-            margin-bottom: 8px;
-        }
-
-        .badge {
-            font-size: 12px;
-            font-weight: 600;
-            color: #7c3aed;
-            background: #f5f3ff;
-            border: 1px solid #ede9fe;
-            padding: 4px 10px;
-            border-radius: 999px;
-        }
-
-        .info-value {
-            font-size: 20px;
-            font-weight: 700;
-            color: #0f172a;
-            margin-bottom: 4px;
-        }
-
-        .info-sub {
-            font-size: 13px;
-            color: #64748b;
-            line-height: 1.4;
-        }
-
-        .mini-muted {
-            font-size: 12px;
-            color: #94a3b8;
-            margin-top: 10px;
-        }
-
-        /* 반응형 */
-        @media (max-width: 900px) {
-            .info-grid {
-                grid-template-columns: repeat(2, 1fr);
-                bottom: 10px;
-            }
-        }
-
-        @media (max-width: 520px) {
-            .info-grid {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* 로그인 & 툴바 */
-        .hidden {
-            display: none !important;
-        }
-
-        #loginView {
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 24px;
-        }
-
-        .login-shell {
-            width: 100%;
-            max-width: 1100px;
-            display: grid;
-            grid-template-columns: 1.2fr 0.8fr;
-            gap: 18px;
-            align-items: stretch;
-        }
-
-        .login-hero {
-            border-radius: 22px;
-            padding: 38px 40px;
-            color: #0f172a;
-            background: radial-gradient(1200px 600px at 20% 20%, rgba(124, 58, 237, 0.18), transparent 50%),
-                radial-gradient(900px 500px at 80% 10%, rgba(99, 102, 241, 0.18), transparent 55%),
-                linear-gradient(135deg, #f8fafc 0%, #eef2ff 45%, #f5f3ff 100%);
-            border: 1px solid #e5e7eb;
-            box-shadow: 0 10px 30px rgba(2, 6, 23, 0.08);
-            position: relative;
-            overflow: hidden;
-        }
-
-        .login-hero h1 {
-            font-size: 34px;
-            letter-spacing: -0.02em;
-            margin-bottom: 10px;
-        }
-
-        .login-hero p {
-            font-size: 15px;
-            color: #334155;
-            line-height: 1.6;
-            max-width: 54ch;
-        }
-
-        .login-panel {
-            background: white;
-            border: 1px solid #eef2f7;
-            border-radius: 22px;
-            padding: 30px 26px;
-            box-shadow: 0 10px 30px rgba(2, 6, 23, 0.10);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-        }
-
-        .login-title {
-            font-size: 20px;
-            font-weight: 800;
-            color: #0f172a;
-            margin-bottom: 8px;
-        }
-
-        .login-input {
-            width: 100%;
-            padding: 14px 14px;
-            border: 2px solid #e2e8f0;
-            border-radius: 14px;
-            outline: none;
-            font-size: 14px;
-            transition: all 0.2s ease;
-            margin-bottom: 12px;
-        }
-
-        .login-input:focus {
-            border-color: #7c3aed;
-            box-shadow: 0 0 0 4px rgba(124, 58, 237, 0.10);
-        }
-
-        .btn-primary {
-            padding: 12px 14px;
-            border: none;
-            border-radius: 14px;
-            background: linear-gradient(135deg, #7c3aed 0%, #6366f1 100%);
-            color: white;
-            font-weight: 800;
-            cursor: pointer;
-            width: 100%;
-            margin-bottom: 8px;
-        }
-
-        .btn-ghost {
-            padding: 12px 14px;
-            border-radius: 14px;
-            border: 1px solid #e2e8f0;
-            background: white;
-            color: #334155;
-            font-weight: 800;
-            cursor: pointer;
-            width: 100%;
-        }
-
-        /* 툴바 */
-        #toolbar {
-            position: fixed;
-            top: 12px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: calc(100% - 40px);
-            max-width: 900px;
-            background: rgba(255, 255, 255, 0.90);
-            backdrop-filter: blur(10px);
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 10px 12px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            z-index: 60;
-            box-shadow: 0 6px 20px rgba(2, 6, 23, 0.08);
-        }
-
-        .tb-left {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #0f172a;
-            font-weight: 900;
-        }
-
-        .tb-center {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .tb-ind {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 6px 10px;
-            border-radius: 999px;
-            border: 1px solid #e2e8f0;
-            background: rgba(248, 250, 252, 0.8);
-            font-size: 12px;
-            font-weight: 800;
-            color: #0f172a;
-        }
-
-        .dot {
-            width: 9px;
-            height: 9px;
-            border-radius: 50%;
-            background: #94a3b8;
-            box-shadow: 0 0 0 2px rgba(148, 163, 184, 0.20);
-        }
-
-        .tb-ind.ok .dot {
-            background: #22c55e;
-            box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.20);
-        }
-
-        .tb-ind.bad .dot {
-            background: #ef4444;
-            box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.20);
-        }
-
-        .tb-btn {
-            padding: 8px 12px;
-            border-radius: 999px;
-            border: 1px solid #e2e8f0;
-            background: white;
-            font-size: 13px;
-            font-weight: 800;
-            cursor: pointer;
-            color: #334155;
-        }
-
-        .guestbar {
-            position: sticky;
-            top: 12px;
-            z-index: 50;
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin: 12px auto 0;
-            max-width: 900px;
-            padding: 0 2px;
-        }
-
-        .gbtn {
-            border: 1px solid rgba(0, 0, 0, 0.10);
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(6px);
-            padding: 10px 12px;
-            border-radius: 12px;
-            font-weight: 600;
-            cursor: pointer;
-        }
-
-        @media (max-width: 980px) {
-            .login-shell {
-                grid-template-columns: 1fr;
-            }
-
-            .login-hero {
-                padding: 28px 26px;
-            }
-        }
-    </style>
+    @media (max-width: 980px){
+      .info-grid{ grid-template-columns:repeat(2,1fr); }
+      .login-shell{ grid-template-columns:1fr; }
+      .login-hero{ display:none; }
+      .tb-left{ min-width:auto; }
+      .tb-right{ min-width:auto; }
+    }
+  </style>
 </head>
-
 <body>
-    <div id="loginView">
-        <div class="login-shell">
-            <div class="login-hero">
-                <h1>Team2 통합 대시보드</h1>
-                <p>날씨 · 전력(KPX) · 환율 · 시간 정보를 한 화면에서 확인하고 질문을 통해 데이터를 조회합니다.</p>
-                <div class="hero-badges"><span class="hero-pill">K8s 기반 통합 관제 UI</span></div>
-            </div>
 
-            <div class="login-panel">
-                <div class="login-title">로그인</div>
-                <div class="login-desc">관리자(admin)만 상단 툴바가 노출됩니다.</div>
-
-                <div class="login-field">
-                    <label>아이디</label>
-                    <input class="login-input" id="loginUser" type="text" placeholder="admin">
-                </div>
-                <div class="login-field">
-                    <label>비밀번호</label>
-                    <input class="login-input" id="loginPass" type="password" placeholder="admin123">
-                </div>
-
-                <div class="login-actions">
-                    <button class="btn-primary" id="btnLogin" type="button">로그인</button>
-                    <button class="btn-ghost" id="btnGuest" type="button">비회원 입장</button>
-                </div>
-                <div class="login-hint" id="loginHint" style="color:#ef4444;"></div>
-            </div>
+  <div id="loginView">
+    <div class="login-shell">
+      <div class="login-hero">
+        <h1>AI + API 기반<br>통합 대시보드</h1>
+        <p>Kubernetes 기반 인프라 관제 및 실시간<br>날씨, 강수, 미세먼지 정보를 확인하세요.</p>
+        <div style="margin-top:20px;">
+          <span style="background:rgba(255,255,255,0.2); padding:5px 12px; border-radius:20px; font-size:12px; font-weight:900;">
+            🚀 v7.4 + Ollama
+          </span>
         </div>
+      </div>
+
+      <div class="login-panel">
+        <div class="login-title">환영합니다! 👋</div>
+        <div class="login-desc">로그인하여 대시보드에 접속하세요.</div>
+
+        <label style="font-size:13px; font-weight:900;">아이디</label>
+        <input class="login-input login-trigger" id="loginUser" placeholder="아이디">
+
+        <label style="font-size:13px; font-weight:900;">비밀번호</label>
+        <input class="login-input login-trigger" id="loginPass" type="password" placeholder="비밀번호">
+
+        <button class="btn-primary" id="btnLogin">로그인</button>
+        <button class="btn-ghost" id="btnGuest">비회원 입장</button>
+
+        <div class="login-links">
+          <button class="link-btn" id="btnShowSignup">회원가입</button>
+          <button class="link-btn" id="btnShowReset">비밀번호 찾기</button>
+        </div>
+
+        <div id="authExtra" class="hidden">
+          <div id="signupPane" class="hidden">
+            <div style="font-weight:900; margin-bottom:10px;">회원가입</div>
+            <input class="login-input" id="suUser" placeholder="새 아이디">
+            <input class="login-input" id="suPass" type="password" placeholder="새 비밀번호">
+            <button class="btn-primary" id="btnDoSignup" style="margin-top:5px;">가입하기</button>
+            <button class="link-btn" onclick="closeExtra()" style="width:100%; margin-top:5px;">닫기</button>
+          </div>
+          <div id="resetPane" class="hidden">
+            <div style="font-weight:900; margin-bottom:10px;">비밀번호 재설정</div>
+            <input class="login-input" id="rpUser" placeholder="기존 아이디">
+            <input class="login-input" id="rpNewPass" type="password" placeholder="새 비밀번호">
+            <button class="btn-primary" id="btnDoReset" style="margin-top:5px;">변경하기</button>
+            <button class="link-btn" onclick="closeExtra()" style="width:100%; margin-top:5px;">닫기</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="dashboardView" class="hidden">
+    <div class="wrap">
+      <div id="toolbar" class="hidden">
+        <div class="tb-left">
+          <div class="tb-logo">A</div>
+          <span style="font-size:15px;">ADMIN</span>
+          <span class="tb-chip" id="tbUserChip">admin</span>
+        </div>
+
+        <div class="tb-center" aria-label="service indicators">
+          <div class="tb-ind" id="indWeather"><span class="dot"></span>Weather</div>
+          <div class="tb-ind" id="indEnergy"><span class="dot"></span>Energy</div>
+          <div class="tb-ind" id="indFx"><span class="dot"></span>FX</div>
+          <div class="tb-ind" id="indTime"><span class="dot"></span>Time</div>
+        </div>
+
+        <div class="tb-right">
+          <button class="tb-btn" id="tbDarkMode">🌙 다크 모드</button>
+          <button class="tb-btn" id="tbLogout">로그아웃</button>
+        </div>
+      </div>
     </div>
 
-    <div id="dashboardView" class="hidden">
-        <div id="toolbar" class="hidden">
-            <div class="tb-left">
-                <span>ADMIN</span>
-                <span class="tb-chip" id="tbUserChip">user</span>
-            </div>
-            <div class="tb-center">
-                <span class="tb-ind" id="indWeather"><span class="dot"></span><span>Weather</span></span>
-                <span class="tb-ind" id="indEnergy"><span class="dot"></span><span>Energy</span></span>
-                <span class="tb-ind" id="indFx"><span class="dot"></span><span>FX</span></span>
-                <span class="tb-ind" id="indTime"><span class="dot"></span><span>Time</span></span>
-            </div>
-            <div class="tb-right">
-                <button class="tb-btn" id="tbRefresh">위젯 갱신</button>
-                <button class="tb-btn" id="tbLogout">로그아웃</button>
-            </div>
-        </div>
-
-        <div id="guestBar" class="guestbar hidden">
-            <button class="gbtn" id="guestLogout">로그아웃</button>
-        </div>
-
-        <div class="container">
-            <div class="quote-card">
-                <div class="quote-text" id="quoteText">Simplicity is the soul of efficiency.</div>
-                <div class="quote-author" id="quoteAuthor">— Austin Freeman</div>
-            </div>
-
-            <div class="main-section">
-                <div class="input-wrapper">
-                    <input type="text" class="question-input" id="questionInput" placeholder="질문을 입력하세요..."
-                        autocomplete="off">
-                    <button class="send-button" id="sendButton">▲</button>
-                </div>
-                <div class="example-questions">
-                    <button class="example-btn" data-question="오늘 날씨 알려줘">날씨</button>
-                    <button class="example-btn" data-question="전력 사용량">전력</button>
-                    <button class="example-btn" data-question="환율 정보">환율</button>
-                </div>
-            </div>
-
-            <div class="response-area" id="responseArea">
-                <div class="response-content">
-                    <div class="chat-history" id="chatHistory"></div>
-                </div>
-            </div>
-        </div>
-
-        <div class="info-grid">
-            <div class="info-card">
-                <div class="info-title"><span>날씨</span> <span class="badge">Open-Meteo</span></div>
-                <div class="info-value" id="weatherValue">—</div>
-                <div class="info-sub" id="weatherSub">로딩 중...</div>
-            </div>
-            <div class="info-card">
-                <div class="info-title"><span>전력(KPX)</span> <span class="badge">지역별</span></div>
-                <div class="info-value" id="energyValue">—</div>
-                <div class="info-sub" id="energySub">로딩 중...</div>
-            </div>
-            <div class="info-card">
-                <div class="info-title"><span>환율</span> <span class="badge">USD→KRW</span></div>
-                <div class="info-value" id="fxValue">—</div>
-                <div class="info-sub" id="fxSub">로딩 중...</div>
-            </div>
-            <div class="info-card">
-                <div class="info-title"><span>시간</span> <span class="badge">KST</span></div>
-                <div class="info-value" id="timeValue">—</div>
-                <div class="info-sub" id="timeSub">로딩 중...</div>
-            </div>
-        </div>
+    <div class="wrap">
+      <div id="guestHeader" class="hidden">
+        <button class="gbtn" id="guestLogout">👈 뒤로가기</button>
+      </div>
     </div>
 
-    <script>
-        // =========================================
-        // [설정] 핵심 상수 및 API 설정
-        // =========================================
-        const AUTH_KEY = "team2_auth_v1";
-        const USERS_KEY = "team2_users_v1";
+    <div class="wrap">
+      <div class="hint-banner" id="hostHint">⚠️ IP로 접속 중입니다. <strong>cafekec.shop</strong> 도메인을 권장합니다.</div>
+    </div>
 
-        // Ingress 통합 환경을 위해 빈 문자열 사용 (상대 경로 호출)
-        const API_BASE = "";
+    <div class="page">
+      <div class="wrap">
+        <div class="main-area">
+          <div class="quote-card">
+            <div class="quote-text" id="quoteText">Loading...</div>
+            <div class="quote-author" id="quoteAuthor"></div>
+          </div>
 
-        const WIDGETS = {
-            fxBase: "USD",
-            fxTarget: "KRW",
-            // 내부망 API 경로 (에너지)
-            energyEndpoint: "/api/energy/kpx/now?page=1&perPage=2",
-            // 외부망 API 경로 (환율, 날씨)
-            fxExternalUrl: "https://open.er-api.com/v6/latest/USD",
-            weatherUrl: "https://api.open-meteo.com/v1/forecast?latitude=37.5665&longitude=126.978&current_weather=true"
-        };
+          <div class="main-section">
+            <div class="input-wrapper">
+              <input type="text" class="question-input" id="questionInput"
+                     placeholder="질문을 입력하세요 (예: 날씨, 미세먼지, 인프라, 쿠버, 전력 등)" autocomplete="off">
+              <button class="send-button" id="sendButton">▲</button>
+            </div>
 
-        const HEALTH = { weather: null, energy: null, fx: null, time: null };
+            <div class="example-questions">
+              <button class="example-btn" data-question="오늘 서울 날씨 요약해줘">☁️ 현재 날씨</button>
+              <button class="example-btn" data-question="미세먼지(PM10/PM2.5) 상태 알려줘">🌫️ 미세먼지</button>
+              <button class="example-btn" data-question="쿠버네티스가 뭐야?">☸️ Kubernetes</button>
+              <button class="example-btn" data-question="우리 구조에서 Ingress VIP와 API VIP 차이 설명해줘">🧠 아키텍처</button>
+            </div>
+          </div>
 
-        // =========================================
-        // 1. 로그인 및 세션 관리
-        // =========================================
-        function initAuth() {
-            const auth = JSON.parse(localStorage.getItem(AUTH_KEY));
-            if (auth) {
-                document.getElementById("loginView").classList.add("hidden");
-                document.getElementById("dashboardView").classList.remove("hidden");
+          <div class="chat-topbar" id="chatTopbar">
+            <button class="clear-chat-out" id="btnClearChatOuter">대화 초기화</button>
+          </div>
 
-                if (auth.role === "admin") {
-                    document.getElementById("toolbar").classList.remove("hidden");
-                    document.getElementById("guestBar").classList.add("hidden");
-                    document.getElementById("tbUserChip").textContent = auth.user;
-                } else {
-                    document.getElementById("toolbar").classList.add("hidden");
-                    document.getElementById("guestBar").classList.remove("hidden");
-                }
+          <div class="response-area" id="responseArea">
+            <div class="chat-history" id="chatHistory"></div>
+          </div>
+        </div>
+      </div>
 
-                // 로그인 상태면 위젯 즉시 로드
-                refreshWidgets();
-            }
+      <div class="bottom-area">
+        <div class="wrap">
+          <div class="info-grid">
+            <div class="info-card">
+              <div class="info-title">날씨 <span class="badge">기상청 초단기</span></div>
+              <div class="info-value" id="weatherValue">—</div>
+              <div class="info-sub" id="weatherSub">로딩 중...</div>
+            </div>
+            <div class="info-card">
+              <div class="info-title">강수 <span class="badge">기상청 초단기</span></div>
+              <div class="info-value" id="rainValue">—</div>
+              <div class="info-sub" id="rainSub">로딩 중...</div>
+            </div>
+            <div class="info-card">
+              <div class="info-title">미세먼지(PM10) <span class="badge">서울</span></div>
+              <div class="info-value" id="pm10Value">—</div>
+              <div class="info-sub" id="pm10Sub">로딩 중...</div>
+            </div>
+            <div class="info-card">
+              <div class="info-title">초미세먼지(PM2.5) <span class="badge">서울</span></div>
+              <div class="info-value" id="pm25Value">—</div>
+              <div class="info-sub" id="pm25Sub">로딩 중...</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /page -->
+  </div>
+
+  <script>
+    const AUTH_KEY = "team2_auth_v1";
+    const USERS_KEY = "team2_users_v1";
+    const API_BASE = "";
+
+    // ==========================
+    // ✅ AI 설정 (여기만 바꾸면 됨)
+    // ==========================
+    const AI_MODEL = "llama3.1:latest";
+    const AI_PROXY_ENDPOINT = "/api/ai/api/chat";
+    const AI_DIRECT_ENDPOINT = "http://10.2.2.40:11434/api/chat";
+
+    const WIDGETS = {
+      weatherUrl: "/api/weather/weather/ultra",
+      dustPm10Url: "/api/dust/seoul/pm10",
+      dustPm25Url: "/api/dust/seoul/pm25",
+      forecastUrl: "/api/weather/forecast",
+      fxUrl: "/api/fx",
+    };
+
+    const LOCATIONS = [{ name: "서울", nx: 60, ny: 127 }];
+
+    // ✅ 인디케이터 상태
+    const IND = { weather:false, energy:false, fx:false, time:true };
+
+    // ✅ AI 채팅 히스토리 (멀티턴)
+    let chatMessages = [];
+
+    function loadUsers(){ return JSON.parse(localStorage.getItem(USERS_KEY) || "{}"); }
+    function saveUsers(u){ localStorage.setItem(USERS_KEY, JSON.stringify(u)); }
+
+    document.getElementById("btnShowSignup").onclick = () => {
+      document.getElementById("authExtra").classList.remove("hidden");
+      document.getElementById("signupPane").classList.remove("hidden");
+      document.getElementById("resetPane").classList.add("hidden");
+    };
+    document.getElementById("btnShowReset").onclick = () => {
+      document.getElementById("authExtra").classList.remove("hidden");
+      document.getElementById("signupPane").classList.add("hidden");
+      document.getElementById("resetPane").classList.remove("hidden");
+    };
+    window.closeExtra = () => document.getElementById("authExtra").classList.add("hidden");
+
+    const runLogin = () => {
+      const u = document.getElementById("loginUser").value.trim();
+      const p = document.getElementById("loginPass").value.trim();
+      if (u === "admin" && p === "admin123") {
+        sessionStorage.setItem(AUTH_KEY, JSON.stringify({ user: u, role: "admin" }));
+        location.reload();
+      } else {
+        const users = loadUsers();
+        if (users[u] && users[u].pass === p) {
+          sessionStorage.setItem(AUTH_KEY, JSON.stringify({ user: u, role: "user" }));
+          location.reload();
+        } else alert("정보가 일치하지 않습니다.");
+      }
+    };
+    document.getElementById("btnLogin").onclick = runLogin;
+    document.querySelectorAll(".login-trigger").forEach(el =>
+      el.addEventListener("keypress", (e) => { if (e.key === "Enter") runLogin(); })
+    );
+
+    document.getElementById("btnDoSignup").onclick = () => {
+      const u = document.getElementById("suUser").value.trim();
+      const p = document.getElementById("suPass").value.trim();
+      if (!u || !p) return alert("입력하세요");
+      const users = loadUsers();
+      users[u] = { pass: p };
+      saveUsers(users);
+      alert("가입 완료");
+      closeExtra();
+    };
+    document.getElementById("btnDoReset").onclick = () => {
+      const u = document.getElementById("rpUser").value.trim();
+      const p = document.getElementById("rpNewPass").value.trim();
+      const users = loadUsers();
+      if (users[u]) {
+        users[u].pass = p;
+        saveUsers(users);
+        alert("변경 완료");
+        closeExtra();
+      } else alert("존재하지 않는 사용자입니다.");
+    };
+
+    document.getElementById("btnGuest").onclick = () => {
+      sessionStorage.setItem(AUTH_KEY, JSON.stringify({ user: "Guest", role: "guest" }));
+      location.reload();
+    };
+
+    const logout = () => { sessionStorage.removeItem(AUTH_KEY); location.reload(); };
+    document.getElementById("tbLogout").onclick = logout;
+    document.getElementById("guestLogout").onclick = logout;
+
+    document.getElementById("tbDarkMode").onclick = () => document.body.classList.toggle("dark-mode");
+
+    function maybeShowHostHint(){
+      const host = location.hostname || "";
+      const isIPv4 = /^\d{1,3}(\.\d{1,3}){3}$/.test(host);
+      const hint = document.getElementById("hostHint");
+      if (hint) hint.style.display = isIPv4 ? "block" : "none";
+    }
+
+    function setIndOk(elId, ok){
+      const el = document.getElementById(elId);
+      if (!el) return;
+      el.classList.toggle("ok", !!ok);
+    }
+    function syncIndicators(){
+      setIndOk("indWeather", IND.weather);
+      setIndOk("indEnergy",  IND.energy);
+      setIndOk("indFx",      IND.fx);
+      setIndOk("indTime",    IND.time);
+    }
+
+    function safeNum(v){
+      if (v === null || v === undefined) return null;
+      const n = Number(v);
+      return Number.isFinite(n) ? n : null;
+    }
+
+    async function loadWeatherAndRain(){
+      try{
+        const { nx, ny } = LOCATIONS[0];
+        const url = `${API_BASE}${WIDGETS.weatherUrl}?nx=${nx}&ny=${ny}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`weather http ${res.status}`);
+        const json = await res.json();
+
+        const temp = safeNum(json.temperature_c);
+        const reh  = safeNum(json.humidity_pct);
+        const rain = safeNum(json.rain_1h_mm);
+
+        if (temp !== null){
+          document.getElementById("weatherValue").textContent = `${Math.round(temp)}°C`;
+          document.getElementById("weatherSub").textContent = (reh !== null) ? `습도 ${Math.round(reh)}%` : `실시간`;
+        } else {
+          document.getElementById("weatherValue").textContent = "—";
+          document.getElementById("weatherSub").textContent = "데이터 없음";
         }
 
-        function handleLogin() {
-            const u = document.getElementById("loginUser").value.trim();
-            const p = document.getElementById("loginPass").value.trim();
-            const hint = document.getElementById("loginHint");
-
-            // 관리자 하드코딩 확인
-            if (u === "admin" && p === "admin123") {
-                const auth = { user: u, role: "admin" };
-                localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
-                location.reload();
-                return;
-            }
-
-            // 일반 사용자 (LocalStorage 기반 가입자 체크)
-            const users = JSON.parse(localStorage.getItem(USERS_KEY) || "{}");
-            if (users[u] && users[u].pass === p) {
-                const auth = { user: u, role: "user" };
-                localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
-                location.reload();
-            } else {
-                hint.textContent = "아이디 또는 비밀번호가 일치하지 않습니다.";
-            }
+        if (rain !== null){
+          document.getElementById("rainValue").textContent = `${rain}mm`;
+          document.getElementById("rainSub").textContent = "1시간 강수(RN1)";
+        } else {
+          document.getElementById("rainValue").textContent = "—";
+          document.getElementById("rainSub").textContent = "데이터 없음";
         }
 
-        function handleGuest() {
-            const auth = { user: "Guest", role: "guest" };
-            localStorage.setItem(AUTH_KEY, JSON.stringify(auth));
-            location.reload();
+        IND.weather = (temp !== null || rain !== null);
+      } catch(e){
+        console.error("Weather/Rain Fail:", e);
+        document.getElementById("weatherValue").textContent = "N/A";
+        document.getElementById("weatherSub").textContent = "연동 실패";
+        document.getElementById("rainValue").textContent = "N/A";
+        document.getElementById("rainSub").textContent = "연동 실패";
+        IND.weather = false;
+      }
+      syncIndicators();
+    }
+
+    // ✅ 미세먼지: 기존 동작 유지 + 디버그 로그 추가(응답 코드/본문)
+    async function loadDust(kind){
+      const isPm10 = kind === "pm10";
+      const url = isPm10 ? WIDGETS.dustPm10Url : WIDGETS.dustPm25Url;
+
+      const valueEl = document.getElementById(isPm10 ? "pm10Value" : "pm25Value");
+      const subEl   = document.getElementById(isPm10 ? "pm10Sub"   : "pm25Sub");
+
+      try{
+        const fullUrl = `${API_BASE}${url}`;
+        const res = await fetch(fullUrl);
+
+        // ✅ 디버그: status / body 일부
+        if (!res.ok){
+          let body = "";
+          try { body = await res.text(); } catch(_){}
+          console.error("[DUST] HTTP FAIL", { kind, url: fullUrl, status: res.status, body: body?.slice?.(0, 500) });
+          throw new Error(`dust http ${res.status}`);
         }
 
-        function handleLogout() {
-            localStorage.removeItem(AUTH_KEY);
-            location.reload();
+        const json = await res.json();
+        console.log("[DUST] OK", { kind, url: fullUrl, json });
+
+        const payload = isPm10 ? json.pm10 : json.pm25;
+        const grade = payload?.grade;
+        const value = safeNum(payload?.value);
+
+        const dtF = json?.dataTime_forecast || "";
+        const dtR = json?.dataTime_realtime || "";
+        const dt = dtR || dtF || "실시간";
+
+        if (value !== null){
+          valueEl.textContent = `${value}`;
+          subEl.textContent = `${grade || "—"} · ${dt}`;
+          IND.weather = true; // 기존 코드 그대로 유지
+        } else {
+          valueEl.textContent = "—";
+          subEl.textContent = "데이터 없음";
         }
+      } catch(e){
+        console.error("Dust Fail:", kind, e);
+        valueEl.textContent = "N/A";
+        subEl.textContent = "연동 실패";
+      }
+      syncIndicators();
+    }
 
-        // =========================================
-        // 2. 위젯 데이터 로딩 (핵심 로직 수정됨)
-        // =========================================
+    async function refreshWidgets(){
+      IND.weather = false; IND.energy = false; IND.fx = false; IND.time = true;
+      await Promise.allSettled([
+        loadWeatherAndRain(),
+        loadDust("pm10"),
+        loadDust("pm25"),
+      ]);
+      syncIndicators();
+    }
 
-        // [환율] 외부 API 사용 (Target 대문자 처리 필수)
-        async function loadFx() {
-            try {
-                const res = await fetch(WIDGETS.fxExternalUrl);
-                const data = await res.json();
-                const target = WIDGETS.fxTarget.toUpperCase();
-                const rate = data.rates[target];
+    function loadQuote(){
+      const list = [
+        { t: "Simplicity is the soul of efficiency.", a: "Austin Freeman" },
+        { t: "Code never lies.", a: "Ron Jeffries" },
+        { t: "First, solve the problem. Then, write the code.", a: "John Johnson" },
+      ];
+      const r = list[Math.floor(Math.random() * list.length)];
+      document.getElementById("quoteText").textContent = r.t;
+      document.getElementById("quoteAuthor").textContent = "- " + r.a;
+    }
 
-                if (!rate) throw new Error("Rate not found");
+    function scrollChatToBottom(){
+      const el = document.getElementById("chatHistory");
+      if (!el) return;
+      el.scrollTop = el.scrollHeight;
+    }
 
-                document.getElementById("fxValue").textContent = rate.toFixed(2);
-                document.getElementById("fxSub").textContent = `1 ${WIDGETS.fxBase} = ${rate.toFixed(2)} ${target}`;
-                HEALTH.fx = true;
-            } catch (e) {
-                document.getElementById("fxValue").textContent = "불러오기 실패";
-                document.getElementById("fxSub").textContent = "외부 API 연결 확인 필요";
-                HEALTH.fx = false;
-            }
-            updateHealth();
-        }
+    function escapeHtml(str){
+      return String(str)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+    }
 
-        // [에너지] 기존 내부 API 로직 유지
-        async function loadEnergy() {
-            try {
-                const res = await fetch(`${API_BASE}${WIDGETS.energyEndpoint}`);
-                if (!res.ok) throw new Error("Network response was not ok");
-                const payload = await res.json();
+    function nl2brEscaped(str){
+      return escapeHtml(str).replaceAll("\n","<br/>");
+    }
 
-                const row = payload?.data?.[0];
-                if (!row) throw new Error("No data");
+    function openChatUI(){
+      document.getElementById("responseArea").classList.add("active");
+      document.getElementById("chatTopbar").classList.add("active");
+    }
 
-                const yearNow = new Date().getFullYear();
-                document.getElementById("energyValue").textContent = `연도 ${yearNow}`;
-                document.getElementById("energySub").textContent =
-                    `서울 ${row["서울"] || "-"} · 부산 ${row["부산"] || "-"} · 인천 ${row["인천"] || "-"}`;
-                HEALTH.energy = true;
-            } catch (e) {
-                document.getElementById("energyValue").textContent = "데이터 없음";
-                document.getElementById("energySub").textContent = "내부 API(/api/energy) 확인 필요";
-                HEALTH.energy = false;
-            }
-            updateHealth();
-        }
+    function closeChatUI(){
+      document.getElementById("responseArea").classList.remove("active");
+      document.getElementById("chatTopbar").classList.remove("active");
+    }
 
-        // [날씨] Open-Meteo (설정 없이 즉시 작동 보장)
-        async function loadWeather() {
-            try {
-                const res = await fetch(WIDGETS.weatherUrl);
-                const data = await res.json();
-                const temp = data.current_weather.temperature;
+    function appendChat(role, text, opts={}){
+      const hist = document.getElementById("chatHistory");
+      const isUser = role === "user";
+      const id = opts.id ? ` id="${opts.id}"` : "";
+      const bubble = `<div class="chat-bubble">${nl2brEscaped(text)}</div>`;
+      hist.innerHTML += `<div class="chat-msg${isUser ? " user": ""}"${id}>${bubble}</div>`;
+      scrollChatToBottom();
+    }
 
-                document.getElementById("weatherValue").textContent = `${temp}°C`;
-                document.getElementById("weatherSub").textContent = "서울 현재 기온";
-                HEALTH.weather = true;
-            } catch (e) {
-                document.getElementById("weatherValue").textContent = "오류";
-                HEALTH.weather = false;
-            }
-            updateHealth();
-        }
+    function setChatBubbleById(id, text, isError=false){
+      const el = document.getElementById(id);
+      if (!el) return;
+      const color = isError ? " style='color:#ef4444;font-weight:900;'" : "";
+      el.innerHTML = `<div class="chat-bubble"${color}>${nl2brEscaped(text)}</div>`;
+      scrollChatToBottom();
+    }
 
-        // [시간] 로컬 브라우저 시간
-        function loadTime() {
-            try {
-                const now = new Date();
-                const timeStr = now.toLocaleTimeString('ko-KR', { hour12: false, hour: '2-digit', minute: '2-digit' });
-                document.getElementById("timeValue").textContent = timeStr;
-                document.getElementById("timeSub").textContent = now.toLocaleDateString('ko-KR');
-                HEALTH.time = true;
-            } catch {
-                HEALTH.time = false;
-            }
-            updateHealth();
-        }
+    async function callAI(messages){
+      const payload = { model: AI_MODEL, messages, stream: false };
 
-        function updateHealth() {
-            // 관리자 툴바에 있는 인디케이터 색상 변경
-            Object.keys(HEALTH).forEach(k => {
-                const el = document.getElementById(`ind${k.charAt(0).toUpperCase() + k.slice(1)}`);
-                if (el) {
-                    el.classList.remove("ok", "bad");
-                    el.classList.add(HEALTH[k] ? "ok" : "bad");
-                }
-            });
-        }
-
-        async function refreshWidgets() {
-            await Promise.allSettled([loadWeather(), loadEnergy(), loadFx(), loadTime()]);
-            updateHealth();
-        }
-
-        // =========================================
-        // 3. 채팅/Q&A 로직
-        // =========================================
-        function sendQuestion() {
-            const input = document.getElementById("questionInput");
-            const q = input.value.trim();
-            if (!q) return;
-
-            const area = document.getElementById("responseArea");
-            const history = document.getElementById("chatHistory");
-            area.classList.add("active");
-
-            // 사용자 질문 표시
-            const userMsg = document.createElement("div");
-            userMsg.className = "chat-msg user";
-            userMsg.innerHTML = `<div class="chat-bubble">${q}</div>`;
-            history.appendChild(userMsg);
-
-            input.value = "";
-
-            // 봇 답변 생성 (키워드 매칭)
-            let answer = "질문을 이해하지 못했습니다. (날씨, 전력, 환율, 시간)";
-            if (q.includes("날씨")) answer = `현재 날씨는 ${document.getElementById("weatherValue").textContent} 입니다.`;
-            else if (q.includes("전력") || q.includes("에너지")) answer = `전력 정보: ${document.getElementById("energySub").textContent}`;
-            else if (q.includes("환율") || q.includes("달러")) answer = `현재 환율은 ${document.getElementById("fxValue").textContent}원 입니다.`;
-            else if (q.includes("시간")) answer = `현재 시간은 ${document.getElementById("timeValue").textContent} 입니다.`;
-
-            setTimeout(() => {
-                const botMsg = document.createElement("div");
-                botMsg.className = "chat-msg";
-                botMsg.innerHTML = `<div class="chat-bubble">${answer}</div>`;
-                history.appendChild(botMsg);
-                history.scrollTop = history.scrollHeight;
-            }, 300);
-        }
-
-        // =========================================
-        // 4. 이벤트 바인딩 및 초기화
-        // =========================================
-        document.getElementById("btnLogin").onclick = handleLogin;
-        document.getElementById("btnGuest").onclick = handleGuest;
-        document.getElementById("tbLogout").onclick = handleLogout;
-        document.getElementById("guestLogout").onclick = handleLogout;
-        document.getElementById("tbRefresh").onclick = refreshWidgets;
-
-        document.getElementById("sendButton").onclick = sendQuestion;
-        document.getElementById("questionInput").addEventListener("keypress", (e) => {
-            if (e.key === "Enter") sendQuestion();
+      try{
+        const res = await fetch(AI_PROXY_ENDPOINT, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
         });
+        if (!res.ok) throw new Error(`proxy http ${res.status}`);
+        const data = await res.json();
 
-        document.querySelectorAll(".example-btn").forEach(btn => {
-            btn.onclick = () => {
-                document.getElementById("questionInput").value = btn.getAttribute("data-question");
-                sendQuestion();
-            };
-        });
+        const content =
+          data?.message?.content ??
+          data?.choices?.[0]?.message?.content ??
+          data?.response ??
+          null;
 
-        // 초기 실행
-        window.onload = () => {
-            initAuth();
-            setInterval(loadTime, 30000); // 30초마다 시간 갱신
+        if (!content) throw new Error("proxy response invalid");
+        return { via: "proxy", content };
+      } catch(e1){
+        console.warn("AI proxy failed, fallback to direct:", e1.message);
+      }
 
-            // 회원가입용 임시 기능 (테스트용)
-            // 브라우저 콘솔에서 signUp('user1', '1234') 실행 시 가입됨
-            window.signUp = (u, p) => {
-                const users = JSON.parse(localStorage.getItem(USERS_KEY) || "{}");
-                users[u] = { pass: p };
-                localStorage.setItem(USERS_KEY, JSON.stringify(users));
-                console.log(`User ${u} created.`);
-            };
-        };
-    </script>
+      const res2 = await fetch(AI_DIRECT_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      if (!res2.ok) throw new Error(`direct http ${res2.status}`);
+      const data2 = await res2.json();
+      const content2 = data2?.message?.content;
+      if (!content2) throw new Error("direct response invalid");
+      return { via: "direct", content: content2 };
+    }
+
+    async function sendQuestion(){
+      const inp = document.getElementById("questionInput");
+      const q = inp.value.trim();
+      if (!q) return;
+
+      openChatUI();
+
+      appendChat("user", q);
+      inp.value = "";
+
+      chatMessages.push({ role: "user", content: q });
+
+      const loadingId = "loading-" + Date.now();
+      appendChat("assistant", "Thinking...", { id: loadingId });
+
+      try{
+        const { via, content } = await callAI(chatMessages);
+        setChatBubbleById(loadingId, content, false);
+        chatMessages.push({ role: "assistant", content });
+        console.log("AI answered via:", via);
+      } catch(e){
+        console.error("AI Error:", e);
+        setChatBubbleById(loadingId,
+          "AI 호출 실패: " + e.message +
+          "\n(운영 권장: /api/ai 프록시로 Ollama에 붙이기. direct는 CORS에 막힐 수 있음)",
+          true
+        );
+      }
+    }
+
+    document.getElementById("sendButton").onclick = sendQuestion;
+    document.getElementById("questionInput").addEventListener("keypress", (e) => {
+      if (e.key === "Enter") sendQuestion();
+    });
+
+    document.querySelectorAll(".example-btn").forEach(btn => btn.onclick = () => {
+      document.getElementById("questionInput").value = btn.getAttribute("data-question");
+      sendQuestion();
+    });
+
+    document.getElementById("btnClearChatOuter").onclick = () => {
+      if (!confirm("대화 내용을 모두 지우시겠습니까?")) return;
+      document.getElementById("chatHistory").innerHTML = "";
+      chatMessages = [];
+      closeChatUI();
+    };
+
+    window.onload = () => {
+      const auth = JSON.parse(sessionStorage.getItem(AUTH_KEY));
+      if (auth) {
+        document.getElementById("loginView").classList.add("hidden");
+        document.getElementById("dashboardView").classList.remove("hidden");
+
+        if (auth.role === "admin") {
+          document.getElementById("toolbar").classList.remove("hidden");
+          document.getElementById("tbUserChip").textContent = auth.user;
+        } else {
+          document.getElementById("guestHeader").classList.remove("hidden");
+        }
+
+        maybeShowHostHint();
+        loadQuote();
+        syncIndicators();
+
+        refreshWidgets();
+        setInterval(refreshWidgets, 60000);
+      }
+    };
+  </script>
 </body>
-
 </html>
+
